@@ -1,0 +1,6 @@
+[package]
+name = "doomrakr"
+version = "0.1.0"
+authors = ["Nick Essenburg <nessenbu@gmail.com>"]
+
+[dependencies]
