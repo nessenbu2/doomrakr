@@ -1,3 +1,7 @@
+mod logger;
+
+use logger::logger::log;
+
 fn main() {
-    println!("Hello, world!");
+    log("Hello, world!".to_string());
 }
