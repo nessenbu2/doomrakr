@@ -2,7 +2,7 @@ extern crate chrono;
 
 pub mod logger {
 
-    use logger::chrono::prelude::*;
+    use ::chrono::prelude::*;
     use std::fs::OpenOptions;
     use std::io::Write;
 
@@ -18,7 +18,7 @@ pub mod logger {
 
     fn gen_filename() -> String {
         let local_time = Local::now();
-        format!("/tmp/doomrakr/doomrakr.{month}.{day}.{hour}.log",
+        format!("/tmp/doomrakr.{month}.{day}.{hour}.log",
                 month = local_time.month(),
                 day = local_time.day(),
                 hour = local_time.hour())

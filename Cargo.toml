@@ -2,6 +2,15 @@
 name = "doomrakr"
 version = "0.1.0"
 authors = ["Nick Essenburg <nessenbu@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 chrono = "0.4.x"
+
+[[bin]]
+name = "server"
+path = "src/main.rs"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
