@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 chrono = "0.4.x"
+rodio = "0.13.0"
 
 [[bin]]
 name = "server"
@@ -14,3 +15,7 @@ path = "src/main.rs"
 [[bin]]
 name = "client"
 path = "src/client.rs"
+
+[[bin]]
+name = "play"
+path = "src/play.rs"
