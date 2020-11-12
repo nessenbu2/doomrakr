@@ -6,6 +6,7 @@ use crate::fs_walker::fs_walker::fetch_doom;
 
 use std::net::TcpListener;
 
+use std::fs;
 use std::fs::File;
 use std::io::{self, Read};
 use std::io::prelude::*;
@@ -23,8 +24,6 @@ fn main() {
         Err(why) => panic!("couldn't open file {}: {}", display, why),
         Ok(file) => file
     };
-    let mut contents = Vec::new();
-    file.read_to_end(&mut contents);
 
     log("Opened file\n".to_string());
 
@@ -37,7 +36,17 @@ fn main() {
         match stream {
             Ok(mut socket) => {
                 println!("New connection: {}", socket.peer_addr().unwrap());
-                socket.write(&mut contents.as_mut_slice());
+                let mut file = std::fs::File::open("/home/nick/burnz.ogg").unwrap();
+                loop {
+                    let mut val = [0 as u8; 1]; // send something to pause until reader is ready for more
+                    let mut data = [0 as u8; 4096];
+                    let read = file.read(&mut data).unwrap();
+                    socket.write(&mut data);
+                    socket.read(&mut val);
+                    if (read == 0) {
+                        break;
+                    }
+                }
             }
             Err(e) => {
                 println!("Error: {}", e);
