@@ -2,7 +2,7 @@ mod logger;
 mod fs_walker;
 
 use crate::logger::logger::log;
-use crate::fs_walker::fs_walker::fetch_doom;
+use crate::fs_walker::Directory;
 
 use std::net::TcpListener;
 
@@ -27,7 +27,8 @@ fn main() {
 
     log("Opened file\n".to_string());
 
-    fetch_doom("/home/nick/music".to_string());
+    let mut dir = Directory::new();
+    dir.fetch_doom("/home/nick/music".to_string());
 
     let addr = "127.0.0.1:6142";
     let listener = TcpListener::bind(addr).unwrap();
