@@ -5,14 +5,21 @@ use crate::logger::logger::log;
 use crate::fs_walker::Directory;
 
 use std::net::TcpListener;
+use std::net::TcpStream;
+use std::thread;
 
 use std::fs;
 use std::fs::File;
 use std::io::{self, Read};
 use std::io::prelude::*;
 use std::path::Path;
+use std::vec::Vec;
 
-//use std::fs::File;
+struct Connection {
+    client_id: String,
+    socket :TcpStream
+    // TODO: state enum
+}
 
 fn main() {
     log("Hello, world!\n".to_string());
@@ -33,34 +40,100 @@ fn main() {
     let addr = "127.0.0.1:6142";
     let listener = TcpListener::bind(addr).unwrap();
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(mut socket) => {
-                println!("New connection: {}", socket.peer_addr().unwrap());
-                let mut artist = String::new();
-                let mut album = String::new();
-                let mut song = String::new();
-                io::stdin().read_line(&mut artist).unwrap();
-                io::stdin().read_line(&mut album).unwrap();
-                io::stdin().read_line(&mut song).unwrap();
-                let mut path = format!("{}/{}/{}/{}", "/home/nick/music", artist.trim(), album.trim(), song.trim());
-                println!("{}", path);
-                let mut file = std::fs::File::open(path).unwrap();
-                loop {
-                    let mut val = [0 as u8; 1]; // send something to pause until reader is ready for more
-                    let mut data = [0 as u8; 4096];
-                    let read = file.read(&mut data).unwrap();
-                    socket.write(&mut data);
-                    socket.read(&mut val);
-                    if (read == 0) {
-                        break;
-                    }
+    println!("listening for connections");
+    let mut connections: Vec<Connection> = Vec::new();
+    loop {
+        for stream in listener.incoming() {
+            match stream {
+                Ok(mut socket) => {
+                    println!("New connection: {}", socket.peer_addr().unwrap());
+                    let con = init_connection(&mut socket);
+                    thread::spawn(move || {
+                        handle_connection(con);
+                    });
+                }
+                Err(e) => {
+                    println!("Error: {}", e);
+                    /* connection failed */
                 }
             }
-            Err(e) => {
-                println!("Error: {}", e);
-                /* connection failed */
-            }
+            println!("listening for connections");
         }
     }
+}
+
+fn init_connection(socket: &mut TcpStream) -> Connection {
+    let header = get_header_from_stream(socket);
+    println!("Got header. action: {} length: {}", header.action, header.length);
+    let mut client_id_bytes = Vec::new();
+    client_id_bytes.resize(header.length, 0);
+    socket.read(&mut client_id_bytes);
+    // this try_clone() miiiiiight break things. idk lol
+    Connection{client_id: String::from_utf8(client_id_bytes).unwrap(), socket: socket.try_clone().unwrap()}
+}
+
+fn handle_connection(mut connection: Connection) {
+    println!("Connection client_id: {}", connection.client_id);
+    let mut ack_header = Header{action: 1, length:0};
+    loop {
+        ack_header.send(&mut connection.socket).unwrap();
+        let mut header = get_header_from_stream(&mut connection.socket);
+        println!("Got data from client: {}, length: {}", connection.client_id, header.length);
+        let mut data_buf = Vec::new();
+        data_buf.resize(header.length, 0);
+        connection.socket.read(&mut data_buf);
+        let echo = String::from_utf8(data_buf).unwrap();
+        println!("{}", echo);
+    }
+    /*
+    let mut artist = String::new();
+    let mut album = String::new();
+    let mut song = String::new();
+    io::stdin().read_line(&mut artist).unwrap();
+    io::stdin().read_line(&mut album).unwrap();
+    io::stdin().read_line(&mut song).unwrap();
+    let mut path = format!("{}/{}/{}/{}", "/home/nick/music", artist.trim(), album.trim(), song.trim());
+    println!("{}", path);
+    let mut file = std::fs::File::open(path).unwrap();
+    loop {
+        let mut val = [0 as u8; 1]; // send something to pause until reader is ready for more
+        let mut data = [0 as u8; 4096];
+        let read = file.read(&mut data).unwrap();
+        socket.write(&mut data);
+        socket.read(&mut val);
+        if (read == 0) {
+            break;
+        }
+    }
+    */
+}
+
+// BIG TODO: move all this shiz to a helper file
+
+// ACTIONS
+const CLIENT_ACK: u8 = 0;
+const SERVER_ACK: u8 = 1;
+const STRING_DATA: u8 = 123;
+
+pub struct Header {
+    action: u8,
+    length: usize
+}
+
+impl Header {
+    fn send(&mut self, stream: &mut TcpStream) -> io::Result<(usize)> {
+        stream.write(&u8::to_be_bytes(self.action))
+              .and_then(|_| stream.write(&usize::to_be_bytes(self.length)))
+    }
+}
+
+// It's assumed that buf is empty. It only appends, so guess if you want that
+// it'll work, but you're a braver man than I
+
+pub fn get_header_from_stream(stream: &mut TcpStream) -> Header {
+    let mut action = [0 as u8; 1];
+    let mut length = [0 as u8; 8];
+    stream.read(&mut action).unwrap();
+    stream.read(&mut length).unwrap();
+    Header {action: u8::from_be_bytes(action), length: usize::from_be_bytes(length)}
 }
