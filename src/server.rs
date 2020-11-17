@@ -1,14 +1,18 @@
 mod logger;
 mod fs_walker;
 mod headers;
+mod doomrakr;
+mod connection;
 
 use headers::{Header, get_header_from_stream};
+use doomrakr::Doomrakr;
+use connection::Connection;
 use crate::logger::logger::log;
 use crate::fs_walker::Directory;
 
 use std::net::TcpListener;
+use std::sync::{Arc, Mutex};
 use std::net::TcpStream;
-use std::thread;
 
 use std::fs;
 use std::fs::File;
@@ -17,15 +21,7 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::vec::Vec;
 
-struct Connection {
-    client_id: String,
-    socket :TcpStream
-    // TODO: state enum
-}
-
 fn main() {
-    log("Hello, world!\n".to_string());
-
     let path = Path::new("/home/nick/file_to_send.txt");
     let display = path.display();
 
@@ -41,71 +37,49 @@ fn main() {
 
     let addr = "127.0.0.1:6142";
     let listener = TcpListener::bind(addr).unwrap();
+    listener.set_nonblocking(true).unwrap();
 
     println!("listening for connections");
     let mut connections: Vec<Connection> = Vec::new();
+    let mut doom = Doomrakr::new();
+
+    let doom_ref = Arc::new(Mutex::new(&mut doom));
+    Doomrakr::run(doom_ref.clone());
+
     loop {
         for stream in listener.incoming() {
             match stream {
                 Ok(mut socket) => {
                     println!("New connection: {}", socket.peer_addr().unwrap());
-                    let con = init_connection(&mut socket);
-                    thread::spawn(move || {
-                        handle_connection(con);
-                    });
+                    doom_ref.lock().unwrap().handle_new_con(Connection::init_connection(&mut socket));
                 }
                 Err(e) => {
                     println!("Error: {}", e);
                     /* connection failed */
                 }
             }
-            println!("listening for connections");
         }
     }
 }
 
-fn init_connection(socket: &mut TcpStream) -> Connection {
-    let header = get_header_from_stream(socket);
-    println!("Got header. action: {} length: {}", header.action, header.length);
-    let mut client_id_bytes = Vec::new();
-    client_id_bytes.resize(header.length, 0);
-    socket.read(&mut client_id_bytes);
-    // this try_clone() miiiiiight break things. idk lol
-    Connection{client_id: String::from_utf8(client_id_bytes).unwrap(), socket: socket.try_clone().unwrap()}
-}
-
-fn handle_connection(mut connection: Connection) {
-    println!("Connection client_id: {}", connection.client_id);
-    let mut ack_header = Header{action: 1, length:0};
-    loop {
-        ack_header.send(&mut connection.socket).unwrap();
-        let mut header = get_header_from_stream(&mut connection.socket);
-        println!("Got data from client: {}, length: {}", connection.client_id, header.length);
-        let mut data_buf = Vec::new();
-        data_buf.resize(header.length, 0);
-        connection.socket.read(&mut data_buf);
-        let echo = String::from_utf8(data_buf).unwrap();
-        println!("{}", echo);
-    }
-    /*
-    let mut artist = String::new();
-    let mut album = String::new();
-    let mut song = String::new();
-    io::stdin().read_line(&mut artist).unwrap();
-    io::stdin().read_line(&mut album).unwrap();
-    io::stdin().read_line(&mut song).unwrap();
-    let mut path = format!("{}/{}/{}/{}", "/home/nick/music", artist.trim(), album.trim(), song.trim());
-    println!("{}", path);
-    let mut file = std::fs::File::open(path).unwrap();
-    loop {
-        let mut val = [0 as u8; 1]; // send something to pause until reader is ready for more
-        let mut data = [0 as u8; 4096];
-        let read = file.read(&mut data).unwrap();
-        socket.write(&mut data);
-        socket.read(&mut val);
-        if (read == 0) {
-            break;
-        }
-    }
-    */
-}
+/*
+   let mut artist = String::new();
+   let mut album = String::new();
+   let mut song = String::new();
+   io::stdin().read_line(&mut artist).unwrap();
+   io::stdin().read_line(&mut album).unwrap();
+   io::stdin().read_line(&mut song).unwrap();
+   let mut path = format!("{}/{}/{}/{}", "/home/nick/music", artist.trim(), album.trim(), song.trim());
+   println!("{}", path);
+   let mut file = std::fs::File::open(path).unwrap();
+   loop {
+   let mut val = [0 as u8; 1]; // send something to pause until reader is ready for more
+   let mut data = [0 as u8; 4096];
+   let read = file.read(&mut data).unwrap();
+   socket.write(&mut data);
+   socket.read(&mut val);
+   if (read == 0) {
+   break;
+   }
+   }
+   */
