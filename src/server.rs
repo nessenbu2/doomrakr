@@ -37,13 +37,13 @@ fn main() {
 
     let addr = "127.0.0.1:6142";
     let listener = TcpListener::bind(addr).unwrap();
-    listener.set_nonblocking(true).unwrap();
+    //listener.set_nonblocking(true).unwrap();
 
     println!("listening for connections");
     let mut connections: Vec<Connection> = Vec::new();
     let mut doom = Doomrakr::new();
 
-    let doom_ref = Arc::new(Mutex::new(&mut doom));
+    let doom_ref = Arc::new(Mutex::new(doom));
     Doomrakr::run(doom_ref.clone());
 
     loop {

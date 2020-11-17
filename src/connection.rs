@@ -19,8 +19,8 @@ pub struct Connection {
     state: State
 }
 
-impl<'doom> Connection {
-    pub fn init_connection(mut socket: &mut TcpStream) -> Arc<Mutex<&'static Connection>> {
+impl Connection {
+    pub fn init_connection(mut socket: &mut TcpStream) -> Arc<Mutex<Connection>> {
         let header = get_header_from_stream(socket);
         if header.action != headers::CLIENT_ACK {
             println!("Got header but it's not an ack? Let's see what happens. action: {} length: {}",
@@ -36,12 +36,12 @@ impl<'doom> Connection {
         let mut con = Connection{client_id: String::from_utf8(client_id_bytes).unwrap(),
                                 socket: socket.try_clone().unwrap(),
                                 state: State::Connecting};
-        let con_mutex = Arc::new(Mutex::new(&con));
-        Connection::start_heartbeating(con_mutex);
+        let con_mutex = Arc::new(Mutex::new(con));
+        Connection::start_heartbeating(con_mutex.clone());
         con_mutex
     }
 
-    pub fn start_heartbeating(con_mutex: Arc<Mutex<&'static Connection>>) {
+    pub fn start_heartbeating(con_mutex: Arc<Mutex<Connection>>) {
         let con_ref = Arc::clone(&con_mutex);
         // TODO: check connecting status
         thread::spawn(move || {
