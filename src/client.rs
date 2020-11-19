@@ -1,30 +1,27 @@
 mod headers;
+mod client_connection;
 
+use client_connection::ClientConnection;
 use headers::{Header, get_header_from_stream};
 use std::net::{TcpStream};
 use std::io::{self, Read, Write};
 use std::str::from_utf8;
 use std::fs::File;
 use std::fs::OpenOptions;
+use std::time::Duration;
 
 use std::io::BufReader;
+
 
 fn main() {
     let mut client_id = String::new();
     std::io::stdin().read_line(&mut client_id).unwrap();
     let mut stream = TcpStream::connect("localhost:6142").unwrap();;
     println!("Successfully connected to server in port 6142");
+    stream.set_read_timeout(Some(Duration::from_millis(500)));
 
-    let mut ack_header = Header{action:1, length:client_id.len()};
-    ack_header.send(&mut stream).unwrap();
-    stream.write(client_id.as_bytes());
-    loop {
-        let got_msg_header = get_header_from_stream(&mut stream);
-        let mut msg = String::new();
-        std::io::stdin().read_line(&mut msg).unwrap();
-        let mut msg_header = Header{action:123, length:msg.len()};
-        msg_header.send(&mut stream);
-        stream.write(msg.as_bytes());
+    let mut con = ClientConnection::new(client_id, stream);
+    con.run()
         /*
         let mut data = [0 as u8; 4096];
         let read = stream.read(&mut data).unwrap();
@@ -39,7 +36,7 @@ fn main() {
             stream.write(&mut val);
         }
         */
-    }
+}
 
     /*
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
@@ -52,4 +49,3 @@ fn main() {
 
     println!("Terminated.");
     */
-} 

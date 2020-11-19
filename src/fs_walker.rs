@@ -5,16 +5,23 @@ use std::ffi::OsStr;
 use std::vec::Vec;
 
 pub struct Song {
+    artist: String,
+    album: String,
     name: String,
-    path: String
 }
 
 impl Song {
-    pub fn new(name: String, path: String) -> Song {
+    pub fn new(artist: String, album: String, name: String) -> Song {
         Song {
-            name: name,
-            path: path
+            artist: artist,
+            album: album,
+            name: name
         }
+    }
+
+    pub fn get_path(song: Song) -> String {
+        let string_list = vec![song.artist, song.album, song.name];
+        string_list.join("/")
     }
 }
 
@@ -79,7 +86,10 @@ impl Directory {
                 let songs = fs::read_dir(album_path.path()).unwrap();
                 for song in songs {
                     let song_name = song.unwrap().file_name().into_string().unwrap();
-                    _album.songs.push(Song::new(song_name.clone(), song_name.clone()));
+                    _album.songs.push(Song::new(
+                            _artist.name.clone(),
+                            _album.name.clone(),
+                            song_name.clone()));
                 }
                 _artist.albums.push(_album);
             }
