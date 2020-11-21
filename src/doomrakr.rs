@@ -4,12 +4,30 @@ use crate::fs_walker::Directory;
 
 use headers::{Header, get_header_from_stream};
 use std::{thread, time};
+use std::ops::Deref;
 use connection::Connection;
 use std::sync::{Arc, Mutex};
+use std::io::stdin;
 
 pub struct  Doomrakr  {
     connections: Vec<Arc<Mutex<Connection>>>,
     dir: Directory
+}
+
+fn print_con_info(doom: &Doomrakr) {
+    let mut pos = 0;
+    for con_ref in doom.connections.iter() {
+        let con = con_ref.lock().unwrap();
+        println!("pos: {}, client id: {}", pos, con.client_id);
+    }
+}
+
+fn get_selection() -> (usize, String) {
+    let mut con_num = String::new();
+    let mut song_name = String::new();
+    stdin().read_line(&mut con_num).unwrap();
+    stdin().read_line(&mut song_name).unwrap();
+    (con_num.trim().parse::<usize>().unwrap(), song_name)
 }
 
 impl Doomrakr {
@@ -23,11 +41,25 @@ impl Doomrakr {
         let doom_ref = doom.clone();
         thread::spawn(move || {
             loop {
-                // Get user input
                 let doom = doom_ref.lock().unwrap();
-                for con in doom.connections.iter() {
-                    // do something
+                if doom.connections.is_empty() {
+                    drop(doom);
+                    println!("No current connections. Sleeping");
+                    thread::sleep(time::Duration::from_millis(1000));
+                    continue;
                 }
+                print_con_info(doom.deref());
+                drop(doom); // Drop the lock while we wait on user input
+                let (con_num, song_name) = get_selection();
+
+                let doom = doom_ref.lock().unwrap();
+                match doom.connections.get(con_num) {
+                    None => println!("Not a valid connection number"),
+                    Some(con_ref) => {
+                        con_ref.lock().unwrap().deref().send_song(song_name);
+                    }
+                }
+
                 drop(doom);
                 thread::sleep(time::Duration::from_millis(1000));
             }

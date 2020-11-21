@@ -15,7 +15,7 @@ enum State {
 }
 
 pub struct Connection {
-    client_id: String,
+    pub client_id: String,
     socket :TcpStream,
     state: State,
     is_changed: bool
@@ -26,7 +26,7 @@ fn con_main(con_ref: Arc<Mutex<Connection>>) {
         let mut con = con_ref.lock().unwrap();
 
         if con.is_changed {
-            // TODO: clean-up
+            // TODO
         }
 
         match con.state {
@@ -54,15 +54,13 @@ fn heartbeat(con: &mut Connection) {
 
     if len != 0 {
         let mut header = get_header_from_stream(&mut con.socket);
-        println!("Got data from client: {}, length: {}", con.client_id, header.length);
         let mut data_buf = Vec::new();
         data_buf.resize(header.length, 0);
         con.socket.read(&mut data_buf);
         let echo = String::from_utf8(data_buf).unwrap();
-        println!("got hb from client: {}", echo);
     }
 
-    let mut ack_header = Header{action: 1, length:0};
+    let mut ack_header = Header{action:headers::SERVER_ACK, length:0};
     ack_header.send(&mut con.socket).unwrap();
 }
 
@@ -82,8 +80,8 @@ impl Connection {
 
     pub fn init_connection(mut socket: &mut TcpStream) -> Arc<Mutex<Connection>> {
         let header = get_header_from_stream(socket);
-        if header.action != headers::CLIENT_HB {
-            println!("Got header but it's not an ack? Let's see what happens. action: {} length: {}",
+        if header.action != headers::CLIENT_HELLO {
+            println!("Got header but it's not a hello? Let's see what happens. action: {} length: {}",
                      header.action, header.length);
         } else {
             println!("Got header. action: {} length: {}", header.action, header.length);
@@ -100,6 +98,10 @@ impl Connection {
                                 is_changed: false}));
         start_heartbeating(con_mutex.clone());
         con_mutex
+    }
+
+    pub fn send_song(&self, song_path: String) {
+
     }
 
 }

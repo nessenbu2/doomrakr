@@ -3,8 +3,13 @@ use std::net::{TcpStream};
 use std::io::{self, Read, Write};
 
 // ACTIONS
-pub const CLIENT_HB: u8 = 0;
-pub const SERVER_ACK: u8 = 1;
+pub const CLIENT_HELLO: u8 = 0;
+pub const CLIENT_ACK: u8 = 1;
+pub const CLIENT_HB: u8 = 2;
+pub const SERVER_ACK: u8 = 3;
+pub const SERVER_INIT_STREAM: u8 = 4;
+pub const SERVER_STREAM_CHUNK: u8 = 5;
+pub const SERVER_STREAM_FINISHED: u8 = 6;
 
 pub struct Header {
     pub action: u8,

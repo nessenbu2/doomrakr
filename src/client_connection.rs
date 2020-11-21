@@ -25,9 +25,15 @@ fn check_for_commands(con: &mut ClientConnection) {
     let mut peek = [0 as u8; 1];
     match con.stream.peek(&mut peek) {
         Ok(_) => {
-            let got_msg_header = get_header_from_stream(&mut con.stream);
-            println!("got header. action {}, len: {}", got_msg_header.action, got_msg_header.length);
-            // TODO: update state based on action
+            let header = get_header_from_stream(&mut con.stream);
+            println!("got header. action {}, len: {}", header.action, header.length);
+            match header.action {
+                headers::SERVER_ACK => recv_ack(con, &header),
+                headers::SERVER_INIT_STREAM => init_stream(con, &header),
+                headers::SERVER_STREAM_CHUNK => recv_chunk(con, &header),
+                headers::SERVER_STREAM_FINISHED => finish_stream(con, &header),
+                _ => println!("Didn't understand action: {}", header.action)
+            }
         }
         Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
             // NOOP
@@ -38,33 +44,36 @@ fn check_for_commands(con: &mut ClientConnection) {
 
 fn maybe_heartbeat(con: &mut ClientConnection) {
     if SystemTime::now().duration_since(con.last_hb_time).unwrap().as_secs() >= 1 {
-        let mut msg_header = Header{action:123, length: con.client_id.len()};
+        let mut msg_header = Header{action:headers::CLIENT_HB, length: con.client_id.len()};
         msg_header.send(&mut con.stream);
         con.stream.write(con.client_id.as_bytes());
-        println!("sent hb");
         con.last_hb_time = SystemTime::now();
     }
 }
 
-fn recv_chunk(con: &mut ClientConnection) {
+fn recv_ack(con: &mut ClientConnection, header: &Header) {
+    if header.length > 0 {
+        println!("header >0. idk what to do");
+    }
 }
 
-fn check_stream(con: &mut ClientConnection) {
+fn init_stream(con: &mut ClientConnection, header: &Header) {
+}
+
+fn recv_chunk(con: &mut ClientConnection, header: &Header) {
+}
+
+fn finish_stream(con: &mut ClientConnection, header: &Header) {
 }
 
 impl ClientConnection {
     pub fn run(&mut self) {
-        let mut hello_header = Header{action:123, length: self.client_id.len()};
+        let mut hello_header = Header{action:headers::CLIENT_HELLO, length: self.client_id.len()};
         hello_header.send(&mut self.stream).unwrap();
         self.stream.write(self.client_id.as_bytes());
         loop {
             check_for_commands(self);
-            match self.state{
-                ClientState::Idle => maybe_heartbeat(self),
-                ClientState::Streaming => recv_chunk(self),
-                ClientState::Playing => check_stream(self),
-                ClientState::Closed => break
-            }
+            maybe_heartbeat(self);
         }
     }
 
