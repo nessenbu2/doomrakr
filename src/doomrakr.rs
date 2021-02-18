@@ -2,7 +2,6 @@ use crate::headers;
 use crate::connection;
 use crate::fs_walker::Directory;
 
-use headers::{Header, get_header_from_stream};
 use std::{thread, time};
 use std::ops::Deref;
 use connection::Connection;
@@ -15,7 +14,7 @@ pub struct  Doomrakr  {
 }
 
 fn print_con_info(doom: &Doomrakr) {
-    let mut pos = 0;
+    let pos = 0;
     for con_ref in doom.connections.iter() {
         let con = con_ref.lock().unwrap();
         println!("pos: {}, client id: {}", pos, con.client_id);
@@ -37,7 +36,7 @@ impl Doomrakr {
                  dir: Directory::new()}
     }
 
-    pub fn run(mut doom: Arc<Mutex<Doomrakr>>) {
+    pub fn run(doom: Arc<Mutex<Doomrakr>>) {
         let doom_ref = doom.clone();
         thread::spawn(move || {
             loop {
@@ -67,7 +66,7 @@ impl Doomrakr {
     }
 
     // should probably be called "track_new_con"
-    pub fn handle_new_con(&mut self, mut con: Arc<Mutex<Connection>>) {
+    pub fn handle_new_con(&mut self, con: Arc<Mutex<Connection>>) {
         self.connections.push(con.clone())
     }
 

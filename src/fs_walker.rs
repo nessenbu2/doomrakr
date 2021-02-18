@@ -1,7 +1,5 @@
-use std::{fs, io};
+use std::fs;
 use std::collections::HashMap;
-use std::path::Path;
-use std::ffi::OsStr;
 use std::vec::Vec;
 
 pub struct Song {

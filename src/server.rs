@@ -4,28 +4,18 @@ mod headers;
 mod doomrakr;
 mod connection;
 
-use headers::{Header, get_header_from_stream};
 use doomrakr::Doomrakr;
 use connection::Connection;
-use crate::logger::logger::log;
+// use crate::logger::logger::log; TODO: remove this/ move it where it will be used
 
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
-use std::net::TcpStream;
-
-use std::fs;
-use std::fs::File;
-use std::io::{self, Read};
-use std::io::prelude::*;
-use std::path::Path;
-use std::vec::Vec;
 
 fn main() {
     let addr = "127.0.0.1:6142";
     let listener = TcpListener::bind(addr).unwrap();
 
     println!("listening for connections");
-    let mut connections: Vec<Connection> = Vec::new();
     let mut doom = Doomrakr::new();
     doom.init();
 

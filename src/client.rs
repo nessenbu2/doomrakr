@@ -2,21 +2,13 @@ mod headers;
 mod client_connection;
 
 use client_connection::ClientConnection;
-use headers::{Header, get_header_from_stream};
 use std::net::{TcpStream};
-use std::io::{self, Read, Write};
-use std::str::from_utf8;
-use std::fs::File;
-use std::fs::OpenOptions;
 use std::time::Duration;
-
-use std::io::BufReader;
-
 
 fn main() {
     let mut client_id = String::new();
     std::io::stdin().read_line(&mut client_id).unwrap();
-    let mut stream = TcpStream::connect("localhost:6142").unwrap();;
+    let stream = TcpStream::connect("localhost:6142").unwrap();
     println!("Successfully connected to server in port 6142");
     stream.set_read_timeout(Some(Duration::from_millis(500)));
 

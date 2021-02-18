@@ -53,11 +53,12 @@ fn heartbeat(con: &mut Connection) {
     let len = con.socket.peek(&mut peek).expect("peek failed");
 
     if len != 0 {
-        let mut header = get_header_from_stream(&mut con.socket);
+        let header = get_header_from_stream(&mut con.socket);
         let mut data_buf = Vec::new();
         data_buf.resize(header.length, 0);
-        con.socket.read(&mut data_buf);
+        con.socket.read(&mut data_buf).expect("Was given a lenght of data to read but failed");
         let echo = String::from_utf8(data_buf).unwrap();
+        println!("Got heartbeat. echo: {}", echo);
     }
 
     let mut ack_header = Header{action:headers::SERVER_ACK, length:0};
@@ -88,7 +89,9 @@ impl Connection {
         }
         let mut client_id_bytes = Vec::new();
         client_id_bytes.resize(header.length, 0);
-        socket.read(&mut client_id_bytes);
+
+        // TODO: this expect will crash the server
+        socket.read(&mut client_id_bytes).expect("Failed to read bytes");
         let mut ack_header = Header{action: 1, length:0};
         ack_header.send(&mut socket).unwrap(); // :J
         let con_mutex = Arc::new(Mutex::new(Connection{

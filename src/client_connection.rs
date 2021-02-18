@@ -1,9 +1,8 @@
 use crate::headers;
 
-use std::thread;
 use std::time::SystemTime;
 use std::net::TcpStream;
-use std::io::{Read, Write};
+use std::io::Write;
 use headers::{Header, get_header_from_stream};
 
 enum ClientState {
