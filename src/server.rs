@@ -6,7 +6,6 @@ mod connection;
 
 use doomrakr::Doomrakr;
 use connection::Connection;
-// use crate::logger::logger::log; TODO: remove this/ move it where it will be used
 
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};

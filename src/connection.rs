@@ -1,12 +1,14 @@
 use crate::headers;
+use crate::fs_walker::Song;
 
 use std::vec::Vec;
 use std::sync::{Arc, Mutex};
 use std::net::TcpStream;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::ops::DerefMut;
 use std::{thread, time};
 use headers::{Header, get_header_from_stream};
+use std::mem;
 
 enum State {
     Idle,
@@ -18,7 +20,8 @@ pub struct Connection {
     pub client_id: String,
     socket :TcpStream,
     state: State,
-    is_changed: bool
+    is_changed: bool,
+    song: Song // not valid if state is not Streaming
 }
 
 fn con_main(con_ref: Arc<Mutex<Connection>>) {
@@ -98,13 +101,27 @@ impl Connection {
                                 client_id: String::from_utf8(client_id_bytes).unwrap(),
                                 socket: socket.try_clone().unwrap(),
                                 state: State::Idle,
-                                is_changed: false}));
+                                is_changed: false,
+                                song: Song::empty()}));
         start_heartbeating(con_mutex.clone());
         con_mutex
     }
 
-    pub fn send_song(&self, song_path: String) {
+    // TODO: refactor this stuff to use some sort of ByteBuffer class if it exists in rust
+    pub fn send_song(&mut self, song: Song) {
+        let body_len = mem::size_of::<usize>() * 3 + song.artist.len() + song.album.len() + song.name.len();
+        let mut init_header = Header{action:headers::SERVER_INIT_STREAM, length:0};
+        init_header.send(&mut self.socket).unwrap();
+        self.socket.write(&usize::to_be_bytes(song.artist.len()));
+        self.socket.write(&usize::to_be_bytes(song.album.len()));
+        self.socket.write(&usize::to_be_bytes(song.name.len()));
+        self.socket.write(&mut song.artist.as_bytes());
+        self.socket.write(&mut song.album.as_bytes());
+        self.socket.write(&mut song.name.as_bytes());
 
+        let ack = get_header_from_stream(&mut self.socket);
+        println!("got ack");
+        // TODO: set state on connection to start streaming
     }
 
 }

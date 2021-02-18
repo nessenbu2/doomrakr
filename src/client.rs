@@ -12,7 +12,7 @@ fn main() {
     println!("Successfully connected to server in port 6142");
     stream.set_read_timeout(Some(Duration::from_millis(500)));
 
-    let mut con = ClientConnection::new(client_id, stream);
+    let mut con = ClientConnection::new(client_id.trim().to_string(), stream);
     con.run()
         /*
         let mut data = [0 as u8; 4096];

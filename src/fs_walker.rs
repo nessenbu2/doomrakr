@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use std::vec::Vec;
 
 pub struct Song {
-    artist: String,
-    album: String,
-    name: String,
+    pub artist: String,
+    pub album: String,
+    pub name: String,
 }
 
 impl Song {
@@ -20,6 +20,14 @@ impl Song {
     pub fn get_path(song: Song) -> String {
         let string_list = vec![song.artist, song.album, song.name];
         string_list.join("/")
+    }
+    
+    pub fn empty() -> Song {
+        Song{
+            artist: String::new(),
+            album: String::new(),
+            name: String::new()
+        }
     }
 }
 

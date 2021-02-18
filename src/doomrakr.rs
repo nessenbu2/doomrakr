@@ -1,14 +1,15 @@
 use crate::headers;
 use crate::connection;
-use crate::fs_walker::Directory;
+use crate::fs_walker::{Directory, Song};
+use crate::logger::logger::log;
 
 use std::{thread, time};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use connection::Connection;
 use std::sync::{Arc, Mutex};
 use std::io::stdin;
 
-pub struct  Doomrakr  {
+pub struct Doomrakr  {
     connections: Vec<Arc<Mutex<Connection>>>,
     dir: Directory
 }
@@ -21,12 +22,18 @@ fn print_con_info(doom: &Doomrakr) {
     }
 }
 
-fn get_selection() -> (usize, String) {
+fn get_selection() -> (usize, Song) {
     let mut con_num = String::new();
+    let mut artist_name = String::new();
+    let mut album_name = String::new();
     let mut song_name = String::new();
     stdin().read_line(&mut con_num).unwrap();
+    stdin().read_line(&mut artist_name).unwrap();
+    stdin().read_line(&mut album_name).unwrap();
     stdin().read_line(&mut song_name).unwrap();
-    (con_num.trim().parse::<usize>().unwrap(), song_name)
+    artist_name.trim(); album_name.trim(); song_name.trim();
+    (con_num.trim().parse::<usize>().unwrap(),
+     Song::new(artist_name, album_name, song_name))
 }
 
 impl Doomrakr {
@@ -43,19 +50,20 @@ impl Doomrakr {
                 let doom = doom_ref.lock().unwrap();
                 if doom.connections.is_empty() {
                     drop(doom);
-                    println!("No current connections. Sleeping");
+                    log("No current connections. Sleeping");
                     thread::sleep(time::Duration::from_millis(1000));
                     continue;
                 }
                 print_con_info(doom.deref());
                 drop(doom); // Drop the lock while we wait on user input
-                let (con_num, song_name) = get_selection();
+                let (con_num, mut song) = get_selection();
 
                 let doom = doom_ref.lock().unwrap();
                 match doom.connections.get(con_num) {
                     None => println!("Not a valid connection number"),
                     Some(con_ref) => {
-                        con_ref.lock().unwrap().deref().send_song(song_name);
+                        println!("Sending song: {}/{}/{}", song.artist, song.album, song.name);
+                        con_ref.lock().unwrap().deref_mut().send_song(song);
                     }
                 }
 
