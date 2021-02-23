@@ -7,8 +7,10 @@ use std::net::TcpStream;
 use std::io::{Read, Write};
 use std::ops::DerefMut;
 use std::{thread, time};
+use std::option::Option;
 use headers::{Header, get_header_from_stream};
 use std::mem;
+use std::fs::File;
 
 enum State {
     Idle,
@@ -21,7 +23,9 @@ pub struct Connection {
     socket :TcpStream,
     state: State,
     is_changed: bool,
-    song: Song // not valid if state is not Streaming
+    // TODO: should try to hide this somewhere
+    song: Option<Song>, // not valid if state is not Streaming
+    file: Option<File> // also not valid if state is not Streaming
 }
 
 fn con_main(con_ref: Arc<Mutex<Connection>>) {
@@ -68,7 +72,27 @@ fn heartbeat(con: &mut Connection) {
     ack_header.send(&mut con.socket).unwrap();
 }
 
+// TODO: implement retries
 fn send_chunk(con: &mut Connection) {
+    let mut data = [0 as u8; 4096];
+    let chunk_len = con.file.as_ref().unwrap().read(&mut data).unwrap();
+
+    if (chunk_len == 0) {
+        let mut fin_header = Header{action:headers::SERVER_STREAM_FINISHED, length:chunk_len};
+        fin_header.send(&mut con.socket).unwrap();
+        con.state = State::Idle;
+        con.song = None;
+        con.file = None; // TODO: maybe clean up? Rust might just magically close the file tho
+    } else {
+        let mut chunk_header = Header{action:headers::SERVER_STREAM_CHUNK, length:chunk_len};
+        chunk_header.send(&mut con.socket).unwrap();
+        con.socket.write(&data);
+    }
+
+    let header = get_header_from_stream(&mut con.socket);
+    if (header.action != headers::CLIENT_ACK) {
+        print!("got a response, but it wasn't ack");
+    }
 }
 
 fn clean_up(con: &mut Connection) {
@@ -102,7 +126,8 @@ impl Connection {
                                 socket: socket.try_clone().unwrap(),
                                 state: State::Idle,
                                 is_changed: false,
-                                song: Song::empty()}));
+                                song: Option::None,
+                                file: Option::None}));
         start_heartbeating(con_mutex.clone());
         con_mutex
     }
@@ -121,7 +146,16 @@ impl Connection {
 
         let ack = get_header_from_stream(&mut self.socket);
         println!("got ack");
-        // TODO: set state on connection to start streaming
+        let base_path = "/home/nick/music";
+        let song_path = Song::get_path(&song);
+        let path = format!("{}/{}", base_path, song_path);
+        println!("{}", base_path);
+        println!("{}", song_path);
+        println!("{}", path);
+        self.file = Some(std::fs::File::open(path).unwrap());
+        self.song = Some(song);
+
+        self.state = State::Streaming
     }
 
 }

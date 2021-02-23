@@ -2,13 +2,14 @@ use crate::headers;
 
 use std::time::SystemTime;
 use std::net::TcpStream;
-use std::io::{Read, Write};
+use std::io::{Read, Write, BufReader};
 use headers::{Header, get_header_from_stream};
+use std::fs::OpenOptions;
 
 enum ClientState {
     Idle,
-    Streaming,
     Playing,
+    Paused,
     Closed
 }
 
@@ -31,6 +32,9 @@ fn check_for_commands(con: &mut ClientConnection) {
                 headers::SERVER_INIT_STREAM => init_stream(con, &header),
                 headers::SERVER_STREAM_CHUNK => recv_chunk(con, &header),
                 headers::SERVER_STREAM_FINISHED => finish_stream(con, &header),
+                headers::SERVER_START => start_play(con, &header),
+                headers::SERVER_PAUSE => pause_play(con, &header),
+                // TODO: skip maybe? idk
                 _ => println!("Didn't understand action: {}", header.action)
             }
         }
@@ -87,9 +91,35 @@ fn init_stream(con: &mut ClientConnection, header: &Header) {
 }
 
 fn recv_chunk(con: &mut ClientConnection, header: &Header) {
+    let mut data = [0 as u8; 4096];
+    let read = con.stream.read(&mut data).unwrap();
+
+    let mut file = OpenOptions::new().append(true).create(true).open("song.ogg").unwrap();
+    if (read == 0) {
+        file.flush();
+    } else {
+        file.write(&mut data);
+    }
+
+    let mut ack_header = Header{action:headers::CLIENT_ACK, length:0};
+    ack_header.send(&mut con.stream);
 }
 
 fn finish_stream(con: &mut ClientConnection, header: &Header) {
+    // TODO: handle music in a different class
+    let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
+    let sink = rodio::Sink::try_new(&handle).unwrap();
+
+    let file = std::fs::File::open("song.ogg").unwrap();
+    sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+
+    sink.sleep_until_end();
+}
+
+fn start_play(con: &mut ClientConnection, header: &Header) {
+}
+
+fn pause_play(con: &mut ClientConnection, header: &Header) {
 }
 
 impl ClientConnection {
@@ -112,3 +142,4 @@ impl ClientConnection {
         }
     }
 }
+

@@ -9,6 +9,8 @@ pub const SERVER_ACK: u8 = 3;
 pub const SERVER_INIT_STREAM: u8 = 4;
 pub const SERVER_STREAM_CHUNK: u8 = 5;
 pub const SERVER_STREAM_FINISHED: u8 = 6;
+pub const SERVER_START: u8 = 7;
+pub const SERVER_PAUSE: u8 = 8;
 
 pub struct Header {
     pub action: u8,

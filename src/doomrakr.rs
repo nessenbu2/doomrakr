@@ -31,9 +31,10 @@ fn get_selection() -> (usize, Song) {
     stdin().read_line(&mut artist_name).unwrap();
     stdin().read_line(&mut album_name).unwrap();
     stdin().read_line(&mut song_name).unwrap();
-    artist_name.trim(); album_name.trim(); song_name.trim();
     (con_num.trim().parse::<usize>().unwrap(),
-     Song::new(artist_name, album_name, song_name))
+     Song::new(artist_name.trim().to_string(),
+               album_name.trim().to_string(),
+               song_name.trim().to_string()))
 }
 
 impl Doomrakr {
