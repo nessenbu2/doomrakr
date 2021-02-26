@@ -1,5 +1,7 @@
 mod headers;
+mod player;
 mod client_connection;
+mod fs_walker;
 
 use client_connection::ClientConnection;
 use std::net::{TcpStream};

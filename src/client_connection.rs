@@ -1,9 +1,11 @@
 use crate::headers;
+use crate::player;
 
 use std::time::SystemTime;
 use std::net::TcpStream;
 use std::io::{Read, Write, BufReader};
 use headers::{Header, get_header_from_stream};
+use player::Player;
 use std::fs::OpenOptions;
 
 enum ClientState {
@@ -17,7 +19,8 @@ pub struct ClientConnection {
     client_id: String,
     stream: TcpStream,
     state: ClientState,
-    last_hb_time: SystemTime
+    last_hb_time: SystemTime,
+    player: Player
     // may want a last_ack_time if i wanna be really robust
 }
 
@@ -138,7 +141,8 @@ impl ClientConnection {
             client_id: client_id,
             stream: stream,
             state: ClientState::Idle,
-            last_hb_time: SystemTime::now()
+            last_hb_time: SystemTime::now(),
+            player: Player::new()
         }
     }
 }

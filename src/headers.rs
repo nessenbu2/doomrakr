@@ -26,7 +26,6 @@ impl Header {
 
 // It's assumed that buf is empty. It only appends, so guess if you want that
 // it'll work, but you're a braver man than I
-
 pub fn get_header_from_stream(stream: &mut TcpStream) -> Header {
     let mut action = [0 as u8; 1];
     let mut length = [0 as u8; 8];
