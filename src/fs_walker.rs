@@ -34,6 +34,16 @@ impl Album {
             songs: Vec::new()
         }
     }
+
+    pub fn print_songs(&self) {
+        for song in self.songs.iter() {
+            println!("{:?}", song.name);
+        }
+    }
+
+    pub fn get_song(&self, song: &String) -> Option<&Song> {
+        self.songs.iter().find(|&s| s.name == *song)
+    }
 }
 
 pub struct Artist {
@@ -48,6 +58,16 @@ impl Artist {
             albums: Vec::new()
         }
     }
+
+    pub fn get_album(&self, album: &String) -> Option<&Album> {
+        self.albums.iter().find(|&a| a.name == *album)
+    }
+
+    pub fn print_albums(&self) {
+        for album in self.albums.iter() {
+            println!("{:?}", album.name);
+        }
+    }
 }
 
 pub struct Directory {
@@ -59,12 +79,19 @@ impl Directory {
         Directory { artists: HashMap::new()}
     }
 
+    pub fn print_artists(&self) {
+        for (_, artist) in self.artists.iter() {
+            println!("{:?}", artist.name);
+        }
+    }
+
+    pub fn get_artist(&self, artist: &String) -> Option<&Artist>{
+        self.artists.get(artist)
+    }
+
     // Since I'm bad at rust, files are going to be stored at
     // the given base directory following the pattern 'ARTIST/ALBUM/Song.format'.
-    // This function will return things in this structure. Types TBD
     pub fn fetch_doom(&mut self, base_dir:String) -> () {
-
-        // TODO: clear self before continuing
 
         // this breaks if files aren't set up correctly
         let artists = fs::read_dir(base_dir).unwrap();

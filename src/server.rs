@@ -37,24 +37,3 @@ fn main() {
     }
 }
 
-/*
-   let mut artist = String::new();
-   let mut album = String::new();
-   let mut song = String::new();
-   io::stdin().read_line(&mut artist).unwrap();
-   io::stdin().read_line(&mut album).unwrap();
-   io::stdin().read_line(&mut song).unwrap();
-   let mut path = format!("{}/{}/{}/{}", "/home/nick/music", artist.trim(), album.trim(), song.trim());
-   println!("{}", path);
-   let mut file = std::fs::File::open(path).unwrap();
-   loop {
-   let mut val = [0 as u8; 1]; // send something to pause until reader is ready for more
-   let mut data = [0 as u8; 4096];
-   let read = file.read(&mut data).unwrap();
-   socket.write(&mut data);
-   socket.read(&mut val);
-   if (read == 0) {
-   break;
-   }
-   }
-   */

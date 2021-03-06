@@ -65,7 +65,6 @@ fn heartbeat(con: &mut Connection) {
         data_buf.resize(header.length, 0);
         con.socket.read(&mut data_buf).expect("Was given a lenght of data to read but failed");
         let echo = String::from_utf8(data_buf).unwrap();
-        println!("Got heartbeat. echo: {}", echo);
     }
 
     let mut ack_header = Header{action:headers::SERVER_ACK, length:0};
@@ -111,9 +110,8 @@ impl Connection {
         if header.action != headers::CLIENT_HELLO {
             println!("Got header but it's not a hello? Let's see what happens. action: {} length: {}",
                      header.action, header.length);
-        } else {
-            println!("Got header. action: {} length: {}", header.action, header.length);
         }
+
         let mut client_id_bytes = Vec::new();
         client_id_bytes.resize(header.length, 0);
 
@@ -145,13 +143,9 @@ impl Connection {
         self.socket.write(&mut song.name.as_bytes());
 
         let ack = get_header_from_stream(&mut self.socket);
-        println!("got ack");
         let base_path = "/home/nick/music";
         let song_path = Song::get_path(&song);
         let path = format!("{}/{}", base_path, song_path);
-        println!("{}", base_path);
-        println!("{}", song_path);
-        println!("{}", path);
         self.file = Some(std::fs::File::open(path).unwrap());
         self.song = Some(song);
 
