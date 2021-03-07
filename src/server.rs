@@ -19,7 +19,7 @@ fn main() {
     doom.init();
 
     let doom_ref = Arc::new(Mutex::new(doom));
-    Doomrakr::run(doom_ref.clone());
+    Doomrakr::run(&doom_ref);
 
     loop {
         for stream in listener.incoming() {

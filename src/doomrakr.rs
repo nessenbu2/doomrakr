@@ -10,9 +10,26 @@ use std::sync::{Arc, Mutex};
 use std::io::stdin;
 
 // String.trim() doesn't seem like it actually trims? or it only gets tabs and
-// spaces.
+// spaces but not new lines.
 fn remove_whitespace(s: &mut String) {
     s.retain(|c| !c.is_whitespace());
+}
+
+fn get_client_selection(max_num: usize) -> Result<usize, String> {
+    println!("\nEnter a connection to send a song to: ");
+    let mut con_num_str  = String::new();
+    stdin().read_line(&mut con_num_str).unwrap();
+
+    let con_num = match con_num_str.trim().parse::<usize>() {
+        Ok(num) => num,
+        Err(error) => return Err(error.to_string())
+    };
+
+    if con_num > max_num || con_num < 0 {
+        return Err(format!("Invalid connection number. select a number between 0 and {}",
+                           max_num));
+    }
+    return Ok(con_num);
 }
 
 pub struct Doomrakr  {
@@ -24,6 +41,7 @@ impl Doomrakr {
 
     fn print_con_info(&self) {
         let mut pos = 0;
+        println!("con nums {}", self.connections.len());
         for con_ref in self.connections.iter() {
             let con = con_ref.lock().unwrap();
             println!("pos: {}, client id: {}", pos, con.client_id);
@@ -36,7 +54,7 @@ impl Doomrakr {
                  dir: Directory::new()}
     }
 
-    pub fn run(doom: Arc<Mutex<Doomrakr>>) {
+    pub fn run(doom: &Arc<Mutex<Doomrakr>>) {
         let doom_ref = doom.clone();
         thread::spawn(move || {
             loop {
@@ -51,14 +69,25 @@ impl Doomrakr {
                 // TODO: blocking access to doomraker here on user input might be bad
                 //       but ideally there's not command line so it might be fine.
                 //       I really should learn how to drop the lock -> read input -> re-lock though
-                let con_num = match doom.get_client_selection() {
+                doom.print_con_info();
+                let max_num = doom.connections.len();
+                drop(doom);
+                let con_num = match get_client_selection(max_num - 1) {
                     Ok(num) => num,
-                    Err(error) => continue
+                    Err(error) => {
+                        println!("Error: {}", error);
+                        continue
+                    }
                 };
 
+                let mut doom = doom_ref.lock().unwrap();
                 let song = match doom.get_song_selection() {
                     Ok(song) => song,
-                    Err(error) => continue
+                    Err(error) => {
+                        println!("Error: {}", error);
+                        drop(doom);
+                        continue
+                    }
                 };
 
                 match doom.connections.get(con_num) {
@@ -77,6 +106,7 @@ impl Doomrakr {
 
     // should probably be called "track_new_con"
     pub fn handle_new_con(&mut self, con: Arc<Mutex<Connection>>) {
+        println!("con nums {}", self.connections.len());
         self.connections.push(con.clone())
     }
 
@@ -84,20 +114,6 @@ impl Doomrakr {
         self.dir.fetch_doom("/home/nick/music".to_string())
     }
 
-    fn get_client_selection(&mut self) -> Result<usize, usize> {
-        self.print_con_info();
-        println!("\nEnter a connection to send a song to: ");
-        let mut con_num_str  = String::new();
-        stdin().read_line(&mut con_num_str).unwrap();
-
-        let con_num = con_num_str.trim().parse::<usize>().unwrap();
-        if con_num >= self.connections.len() || con_num < 0 {
-            println!("Invalid connection number. select a number between 0 and {}",
-                     self.connections.len());
-            return Err(con_num);
-        }
-        return Ok(con_num);
-    }
 
     fn get_song_selection(&self) -> Result<Song, String> {
         self.dir.print_artists();
@@ -108,8 +124,7 @@ impl Doomrakr {
 
         let artist = self.dir.get_artist(&artist_name);
         if artist.is_none() {
-            println!("Artist {} does not exist. Try again!", artist_name);
-            return Err("asdf".to_string());
+            return Err(format!("Artist {} does not exist. Try again!", artist_name));
         }
         let artist = artist.unwrap();
 
@@ -121,8 +136,7 @@ impl Doomrakr {
 
         let album = artist.get_album(&album_name);
         if album.is_none() {
-            println!("Album {} does not exist. Try again!", album_name);
-            return Err("asdf".to_string());
+            return Err(format!("Album {} does not exist. Try again!", album_name));
         }
         let album = album.unwrap();
         album.print_songs();
@@ -133,8 +147,7 @@ impl Doomrakr {
         remove_whitespace(&mut song_name);
         let song = album.get_song(&song_name);
         if song.is_none() {
-            println!("Song {} does not exist. Try again!", song_name);
-            return Err("asdf".to_string());
+            return Err(format!("Song {} does not exist. Try again!", song_name));
         }
 
         let song = song.unwrap();

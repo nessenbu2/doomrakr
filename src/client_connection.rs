@@ -116,7 +116,9 @@ fn finish_stream(con: &mut ClientConnection, header: &Header) {
     let file = std::fs::File::open("song.ogg").unwrap();
     sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
 
-    sink.sleep_until_end();
+    let mut ack_header = Header{action:headers::CLIENT_ACK, length:0};
+    ack_header.send(&mut con.stream);
+    sink.play();
 }
 
 fn start_play(con: &mut ClientConnection, header: &Header) {
