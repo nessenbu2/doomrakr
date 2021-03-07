@@ -11,6 +11,7 @@ pub const SERVER_STREAM_CHUNK: u8 = 5;
 pub const SERVER_STREAM_FINISHED: u8 = 6;
 pub const SERVER_START: u8 = 7;
 pub const SERVER_PAUSE: u8 = 8;
+pub const CLIENT_SONG_CACHED: u8 = 8;
 
 pub struct Header {
     pub action: u8,

@@ -1,5 +1,6 @@
 use crate::headers;
 use crate::player;
+use crate::fs_walker::Song;
 
 use std::time::SystemTime;
 use std::net::TcpStream;
@@ -65,36 +66,24 @@ fn recv_ack(con: &mut ClientConnection, header: &Header) {
 
 fn init_stream(con: &mut ClientConnection, header: &Header) {
     println!("got a request to init a stream. len: {}", header.length);
-    let mut length = [0 as u8; 8];
 
-    // Read lenghts of song names
-    con.stream.read(&mut length).unwrap(); // TODO :)
-    let artist_length = usize::from_be_bytes(length);
-    con.stream.read(&mut length).unwrap(); // TODO :)
-    let album_length = usize::from_be_bytes(length);
-    con.stream.read(&mut length).unwrap(); // TODO :)
-    let song_length = usize::from_be_bytes(length);
-
-    let mut artist_bytes = vec![0u8; artist_length];
-    let mut album_bytes = vec![0u8; album_length];
-    let mut song_bytes = vec![0u8; song_length];
-    con.stream.read(&mut artist_bytes);
-    con.stream.read(&mut album_bytes);
-    con.stream.read(&mut song_bytes);
-    
-    let artist = String::from_utf8(artist_bytes).unwrap(); // :)
-    let album = String::from_utf8(album_bytes).unwrap(); // :)
-    let song = String::from_utf8(song_bytes).unwrap(); // :)
+    let song = get_song_from_stream(con, header);
 
     println!("Got request to stream a song");
-    println!("Artist: {}, Album: {}, Song: {}", artist, album, song);
+    println!("Artist: {}, Album: {}, Song: {}", song.artist, song.album, song.name);
 
-    let mut ack_header = Header{action:headers::CLIENT_ACK, length:0};
-    ack_header.send(&mut con.stream);
+    if Player::is_song_cached(&song) {
+        let mut cached_song_header = Header{action:headers::CLIENT_SONG_CACHED, length:0};
+        cached_song_header.send(&mut con.stream);
+    } else {
+        let mut ack_header = Header{action:headers::CLIENT_ACK, length:0};
+        ack_header.send(&mut con.stream);
+    }
 }
 
 fn recv_chunk(con: &mut ClientConnection, header: &Header) {
     let mut data = [0 as u8; 4096];
+    let song = get_song_from_stream(con, header);
     let read = con.stream.read(&mut data).unwrap();
 
     let mut file = OpenOptions::new().append(true).create(true).open("song.ogg").unwrap();
@@ -109,7 +98,6 @@ fn recv_chunk(con: &mut ClientConnection, header: &Header) {
 }
 
 fn finish_stream(con: &mut ClientConnection, header: &Header) {
-    // TODO: handle music in a different class
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
     let sink = rodio::Sink::try_new(&handle).unwrap();
 
@@ -125,6 +113,30 @@ fn start_play(con: &mut ClientConnection, header: &Header) {
 }
 
 fn pause_play(con: &mut ClientConnection, header: &Header) {
+}
+
+fn get_song_from_stream(con: &mut ClientConnection, header: &Header) -> Song {
+    let mut length = [0 as u8; 8];
+    // Read lenghts of song names
+    con.stream.read(&mut length).unwrap(); // TODO :)
+    let artist_length = usize::from_be_bytes(length);
+    con.stream.read(&mut length).unwrap(); // TODO :)
+    let album_length = usize::from_be_bytes(length);
+    con.stream.read(&mut length).unwrap(); // TODO :)
+    let song_length = usize::from_be_bytes(length);
+
+    let mut artist_bytes = vec![0u8; artist_length];
+    let mut album_bytes = vec![0u8; album_length];
+    let mut song_bytes = vec![0u8; song_length];
+    con.stream.read(&mut artist_bytes);
+    con.stream.read(&mut album_bytes);
+    con.stream.read(&mut song_bytes);
+
+    let artist = String::from_utf8(artist_bytes).unwrap(); // :)
+    let album = String::from_utf8(album_bytes).unwrap(); // :)
+    let song = String::from_utf8(song_bytes).unwrap(); // :)
+
+    Song::new(artist, album, song)
 }
 
 impl ClientConnection {

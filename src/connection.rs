@@ -74,6 +74,16 @@ fn heartbeat(con: &mut Connection) {
 // TODO: implement retries
 fn send_chunk(con: &mut Connection) {
     let mut data = [0 as u8; 4096];
+
+    // write song "metadata"
+    let song = con.song.as_ref().unwrap();
+    con.socket.write(&usize::to_be_bytes(song.artist.len()));
+    con.socket.write(&usize::to_be_bytes(song.album.len()));
+    con.socket.write(&usize::to_be_bytes(song.name.len()));
+    con.socket.write(&mut song.artist.as_bytes());
+    con.socket.write(&mut song.album.as_bytes());
+    con.socket.write(&mut song.name.as_bytes());
+
     let chunk_len = con.file.as_ref().unwrap().read(&mut data).unwrap();
 
     if (chunk_len == 0) {
