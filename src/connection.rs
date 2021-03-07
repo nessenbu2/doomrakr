@@ -62,7 +62,6 @@ fn heartbeat(con: &mut Connection) {
     if len != 0 {
         let header = get_header_from_stream(&mut con.socket);
         let mut data_buf = Vec::new();
-        println!("hb {}", header.length);
         data_buf.resize(header.length, 0);
         con.socket.read(&mut data_buf).expect("Was given a length of data to read but failed");
         let echo = String::from_utf8(data_buf).unwrap();
@@ -96,6 +95,7 @@ fn send_chunk(con: &mut Connection) {
 }
 
 fn clean_up(con: &mut Connection) {
+    // TODO: :3
 }
 
 fn start_heartbeating(con_mutex: Arc<Mutex<Connection>>) {
@@ -114,7 +114,6 @@ impl Connection {
         }
 
         let mut client_id_bytes = Vec::new();
-        println!("init {}", header.length);
         client_id_bytes.resize(header.length, 0);
 
         // TODO: this expect will crash the server
