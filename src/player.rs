@@ -34,7 +34,7 @@ pub struct Player {
 
 impl Player {
     pub fn new() -> Player {
-        let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
+        let (stream, handle) = rodio::OutputStream::try_default().unwrap();
 
         // TODO: probably check if this is a file or not?
         //       also add a helper
