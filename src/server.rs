@@ -3,6 +3,7 @@ mod fs_walker;
 mod headers;
 mod doomrakr;
 mod connection;
+mod con;
 
 use doomrakr::Doomrakr;
 use connection::Connection;

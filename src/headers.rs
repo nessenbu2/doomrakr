@@ -1,6 +1,8 @@
 use std::net::{TcpStream};
 use std::io::{self, Read, Write};
 
+use crate::con::{Connection, ConnectionSend, ConnectionGet};
+
 // ACTIONS
 pub const CLIENT_HELLO: u8 = 0;
 pub const CLIENT_ACK: u8 = 1;
@@ -18,12 +20,38 @@ pub struct Header {
     pub length: usize
 }
 
+impl ConnectionSend for Header {
+    fn send(&self, con: &mut Connection) -> Result<usize, String> {
+        let mut written = match con.send(&u8::to_be_bytes(self.action)) {
+            Ok(bytes) => bytes,
+            Err(error) => return Err(error)
+        };
+        written + match con.send(&usize::to_be_bytes(self.length)) {
+            Ok(bytes) => bytes,
+            Err(error) => return Err(error)
+        };
+        Ok(written)
+    }
+}
+
+impl ConnectionGet for Header {
+    fn get(&self, con: &mut Connection) -> Result<Self, String> {
+        let mut action = [0 as u8; 1];
+        let mut length = [0 as u8; 8];
+        // TODO check that the right amount of bytes were read
+        con.get(&mut action)?;
+        con.get(&mut length)?;
+        Ok(Header {action: u8::from_be_bytes(action), length: usize::from_be_bytes(length)})
+    }
+}
+
 impl Header {
     pub fn send(&mut self, stream: &mut TcpStream) -> io::Result<usize> {
         stream.write(&u8::to_be_bytes(self.action))
-              .and_then(|_| stream.write(&usize::to_be_bytes(self.length)))
+            .and_then(|_| stream.write(&usize::to_be_bytes(self.length)))
     }
 }
+
 
 // It's assumed that buf is empty. It only appends, so guess if you want that
 // it'll work, but you're a braver man than I
