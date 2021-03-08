@@ -72,10 +72,12 @@ fn init_stream(con: &mut ClientConnection, header: &Header) {
     println!("Got request to stream a song");
     println!("Artist: {}, Album: {}, Song: {}", song.artist, song.album, song.name);
 
-    if Player::is_song_cached(&song) {
+    if Player::is_song_cached(&song) || Player::is_song_streaming(&song) {
         let mut cached_song_header = Header{action:headers::CLIENT_SONG_CACHED, length:0};
         cached_song_header.send(&mut con.stream);
+        con.player.play(&song);
     } else {
+        Player::init_stream(&song);
         let mut ack_header = Header{action:headers::CLIENT_ACK, length:0};
         ack_header.send(&mut con.stream);
     }
@@ -86,27 +88,21 @@ fn recv_chunk(con: &mut ClientConnection, header: &Header) {
     let song = get_song_from_stream(con, header);
     let read = con.stream.read(&mut data).unwrap();
 
-    let mut file = OpenOptions::new().append(true).create(true).open("song.ogg").unwrap();
-    if (read == 0) {
-        file.flush();
-    } else {
-        file.write(&mut data);
-    }
+    Player::add_chunk(&song, &mut data);
 
     let mut ack_header = Header{action:headers::CLIENT_ACK, length:0};
     ack_header.send(&mut con.stream);
 }
 
 fn finish_stream(con: &mut ClientConnection, header: &Header) {
-    let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
-    let sink = rodio::Sink::try_new(&handle).unwrap();
 
-    let file = std::fs::File::open("song.ogg").unwrap();
-    sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+    let song = get_song_from_stream(con, header);
+    Player::complete_stream(&song);
+
+    con.player.play(&song);
 
     let mut ack_header = Header{action:headers::CLIENT_ACK, length:0};
     ack_header.send(&mut con.stream);
-    sink.play();
 }
 
 fn start_play(con: &mut ClientConnection, header: &Header) {

@@ -75,26 +75,34 @@ fn heartbeat(con: &mut Connection) {
 fn send_chunk(con: &mut Connection) {
     let mut data = [0 as u8; 4096];
 
-    // write song "metadata"
-    let song = con.song.as_ref().unwrap();
-    con.socket.write(&usize::to_be_bytes(song.artist.len()));
-    con.socket.write(&usize::to_be_bytes(song.album.len()));
-    con.socket.write(&usize::to_be_bytes(song.name.len()));
-    con.socket.write(&mut song.artist.as_bytes());
-    con.socket.write(&mut song.album.as_bytes());
-    con.socket.write(&mut song.name.as_bytes());
 
     let chunk_len = con.file.as_ref().unwrap().read(&mut data).unwrap();
+    let mut chunk_header = Header{action:headers::SERVER_STREAM_CHUNK, length:chunk_len};
+
+    // write song "metadata"
+    let song = con.song.as_ref().unwrap();
 
     if (chunk_len == 0) {
         let mut fin_header = Header{action:headers::SERVER_STREAM_FINISHED, length:chunk_len};
         fin_header.send(&mut con.socket).unwrap();
+        con.socket.write(&usize::to_be_bytes(song.artist.len()));
+        con.socket.write(&usize::to_be_bytes(song.album.len()));
+        con.socket.write(&usize::to_be_bytes(song.name.len()));
+        con.socket.write(&mut song.artist.as_bytes());
+        con.socket.write(&mut song.album.as_bytes());
+        con.socket.write(&mut song.name.as_bytes());
         con.state = State::Idle;
         con.song = None;
         con.file = None; // TODO: maybe clean up? Rust might just magically close the file tho
     } else {
         let mut chunk_header = Header{action:headers::SERVER_STREAM_CHUNK, length:chunk_len};
         chunk_header.send(&mut con.socket).unwrap();
+        con.socket.write(&usize::to_be_bytes(song.artist.len()));
+        con.socket.write(&usize::to_be_bytes(song.album.len()));
+        con.socket.write(&usize::to_be_bytes(song.name.len()));
+        con.socket.write(&mut song.artist.as_bytes());
+        con.socket.write(&mut song.album.as_bytes());
+        con.socket.write(&mut song.name.as_bytes());
         con.socket.write(&data);
     }
 
@@ -154,6 +162,11 @@ impl Connection {
         self.socket.write(&mut song.name.as_bytes());
 
         let ack = get_header_from_stream(&mut self.socket);
+        if ack.action == headers::CLIENT_SONG_CACHED {
+            // Don't need to do anything :)
+            return;
+        }
+
         let base_path = "/home/nick/music";
         let song_path = Song::get_path(&song);
         let path = format!("{}/{}", base_path, song_path);
