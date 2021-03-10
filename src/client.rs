@@ -1,10 +1,10 @@
 mod headers;
 mod player;
-mod client_connection;
+mod doomreadr;
 mod fs_walker;
 mod con;
 
-use client_connection::ClientConnection;
+use doomreadr::Doomreadr;
 use std::net::{TcpStream};
 use std::time::Duration;
 
@@ -15,32 +15,6 @@ fn main() {
     println!("Successfully connected to server in port 6142");
     stream.set_read_timeout(Some(Duration::from_millis(500)));
 
-    let mut con = ClientConnection::new(client_id.trim().to_string(), stream);
-    con.run()
-        /*
-        let mut data = [0 as u8; 4096];
-        let read = stream.read(&mut data).unwrap();
-        println!("{}", read);
-
-        let mut file = OpenOptions::new().append(true).create(true).open("song.ogg").unwrap();
-        if (read == 0) {
-            file.flush();
-            break;
-        } else {
-            file.write(&mut data);
-            stream.write(&mut val);
-        }
-        */
+    let mut con = Doomreadr::new(client_id.trim().to_string(), stream);
+    con.run();
 }
-
-    /*
-    let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
-    let sink = rodio::Sink::try_new(&handle).unwrap();
-
-    let file = std::fs::File::open("song.ogg").unwrap();
-    sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
-
-    sink.sleep_until_end();
-
-    println!("Terminated.");
-    */
