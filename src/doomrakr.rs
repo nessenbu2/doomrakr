@@ -1,11 +1,11 @@
 use crate::headers;
-use crate::connection;
+use crate::doomrakr_worker;
 use crate::fs_walker::{Directory, Song};
 use crate::logger::logger::log;
 
 use std::{thread, time};
 use std::ops::{Deref, DerefMut};
-use connection::Connection;
+use doomrakr_worker::DoomrakrWorker;
 use std::sync::{Arc, Mutex};
 use std::io::stdin;
 
@@ -33,24 +33,24 @@ fn get_client_selection(max_num: usize) -> Result<usize, String> {
 }
 
 pub struct Doomrakr  {
-    connections: Vec<Arc<Mutex<Connection>>>,
+    workers: Vec<Arc<Mutex<DoomrakrWorker>>>,
     dir: Directory
 }
 
 impl Doomrakr {
 
-    fn print_con_info(&self) {
+    fn print_client_info(&self) {
         let mut pos = 0;
-        println!("con nums {}", self.connections.len());
-        for con_ref in self.connections.iter() {
-            let con = con_ref.lock().unwrap();
-            println!("pos: {}, client id: {}", pos, con.client_id);
+        println!("Connected to {} clients", self.workers.len());
+        for worker_ref in self.workers.iter() {
+            let worker = worker_ref.lock().unwrap();
+            println!("Client Number: {}, Client ID: {}", pos, worker.client_id);
             pos = pos + 1;
         }
     }
 
     pub fn new() -> Doomrakr {
-        Doomrakr{connections: Vec::new(),
+        Doomrakr{workers: Vec::new(),
                  dir: Directory::new()}
     }
 
@@ -59,20 +59,20 @@ impl Doomrakr {
         thread::spawn(move || {
             loop {
                 let mut doom = doom_ref.lock().unwrap();
-                if doom.connections.is_empty() {
+                if doom.workers.is_empty() {
                     drop(doom);
                     log("No current connections. Sleeping");
                     thread::sleep(time::Duration::from_millis(1000));
                     continue;
                 }
 
-                // TODO: blocking access to doomraker here on user input might be bad
-                //       but ideally there's not command line so it might be fine.
-                //       I really should learn how to drop the lock -> read input -> re-lock though
-                doom.print_con_info();
-                let max_num = doom.connections.len();
+                doom.print_client_info();
+                let max_num = doom.workers.len();
                 drop(doom);
-                let con_num = match get_client_selection(max_num - 1) {
+
+                // Should probably get by ID since it's possible for a connection to be
+                // removed while we block on inupt.
+                let worker_num = match get_client_selection(max_num - 1) {
                     Ok(num) => num,
                     Err(error) => {
                         println!("Error: {}", error);
@@ -80,6 +80,7 @@ impl Doomrakr {
                     }
                 };
 
+                // Not ideal to block on input here :(
                 let mut doom = doom_ref.lock().unwrap();
                 let song = match doom.get_song_selection() {
                     Ok(song) => song,
@@ -90,11 +91,11 @@ impl Doomrakr {
                     }
                 };
 
-                match doom.connections.get(con_num) {
-                    None => println!("Not a valid connection number"),
-                    Some(con_ref) => {
+                match doom.workers.get(worker_num) {
+                    None => println!("Not a valid client number"),
+                    Some(worker_ref) => {
                         println!("Sending song: {}/{}/{}", song.artist, song.album, song.name);
-                        con_ref.lock().unwrap().deref_mut().send_song(song);
+                        worker_ref.lock().unwrap().deref_mut().send_song(song);
                     }
                 }
 
@@ -104,16 +105,15 @@ impl Doomrakr {
         });
     }
 
-    // should probably be called "track_new_con"
-    pub fn handle_new_con(&mut self, con: Arc<Mutex<Connection>>) {
-        println!("con nums {}", self.connections.len());
-        self.connections.push(con.clone())
+    // should probably be called "track_new_con" and shouldn't take a worker.
+    // just a Connection object
+    pub fn handle_new_con(&mut self, worker: Arc<Mutex<DoomrakrWorker>>) {
+        self.workers.push(worker.clone())
     }
 
     pub fn init(&mut self) {
         self.dir.fetch_doom("/home/nick/music".to_string())
     }
-
 
     fn get_song_selection(&self) -> Result<Song, String> {
         self.dir.print_artists();

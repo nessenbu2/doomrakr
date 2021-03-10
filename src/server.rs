@@ -2,11 +2,11 @@ mod logger;
 mod fs_walker;
 mod headers;
 mod doomrakr;
-mod connection;
+mod doomrakr_worker;
 mod con;
 
 use doomrakr::Doomrakr;
-use connection::Connection;
+use doomrakr_worker::DoomrakrWorker;
 
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
@@ -27,7 +27,7 @@ fn main() {
             match stream {
                 Ok(mut socket) => {
                     println!("New connection: {}", socket.peer_addr().unwrap());
-                    doom_ref.lock().unwrap().handle_new_con(Connection::init_connection(&mut socket));
+                    doom_ref.lock().unwrap().handle_new_con(DoomrakrWorker::init_connection(&mut socket));
                 }
                 Err(e) => {
                     println!("Error: {}", e);

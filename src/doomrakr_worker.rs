@@ -18,7 +18,7 @@ enum State {
     Closed
 }
 
-pub struct Connection {
+pub struct DoomrakrWorker {
     pub client_id: String,
     socket :TcpStream,
     state: State,
@@ -28,26 +28,26 @@ pub struct Connection {
     file: Option<File> // also not valid if state is not Streaming
 }
 
-fn con_main(con_ref: Arc<Mutex<Connection>>) {
+fn doom_main(doom_ref: Arc<Mutex<DoomrakrWorker>>) {
     loop {
-        let mut con = con_ref.lock().unwrap();
+        let mut doom = doom_ref.lock().unwrap();
 
-        if con.is_changed {
+        if doom.is_changed {
             // TODO
         }
 
-        match con.state {
-            State::Idle => heartbeat(con.deref_mut()),
-            State::Streaming => send_chunk(con.deref_mut()),
+        match doom.state {
+            State::Idle => heartbeat(doom.deref_mut()),
+            State::Streaming => send_chunk(doom.deref_mut()),
             State::Closed => {
-                clean_up(con.deref_mut());
+                clean_up(doom.deref_mut());
                 break;
             },
         }
 
-        match con.state {
+        match doom.state {
             State::Idle => {
-                drop(con);
+                drop(doom);
                 thread::sleep(time::Duration::from_millis(10));
             },
             _ => ()
@@ -55,76 +55,76 @@ fn con_main(con_ref: Arc<Mutex<Connection>>) {
     }
 }
 
-fn heartbeat(con: &mut Connection) {
+fn heartbeat(doom: &mut DoomrakrWorker) {
     let mut peek = [0 as u8; 1];
-    let len = con.socket.peek(&mut peek).expect("peek failed");
+    let len = doom.socket.peek(&mut peek).expect("peek failed");
 
     if len != 0 {
-        let header = get_header_from_stream(&mut con.socket);
+        let header = get_header_from_stream(&mut doom.socket);
         let mut data_buf = Vec::new();
         data_buf.resize(header.length, 0);
-        con.socket.read(&mut data_buf).expect("Was given a length of data to read but failed");
+        doom.socket.read(&mut data_buf).expect("Was given a length of data to read but failed");
         let echo = String::from_utf8(data_buf).unwrap();
     }
 
     let mut ack_header = Header{action:headers::SERVER_ACK, length:0};
-    ack_header.send(&mut con.socket).unwrap();
+    ack_header.send(&mut doom.socket).unwrap();
 }
 
 // TODO: implement retries
-fn send_chunk(con: &mut Connection) {
+fn send_chunk(doom: &mut DoomrakrWorker) {
     let mut data = [0 as u8; 4096];
 
 
-    let chunk_len = con.file.as_ref().unwrap().read(&mut data).unwrap();
+    let chunk_len = doom.file.as_ref().unwrap().read(&mut data).unwrap();
     let mut chunk_header = Header{action:headers::SERVER_STREAM_CHUNK, length:chunk_len};
 
     // write song "metadata"
-    let song = con.song.as_ref().unwrap();
+    let song = doom.song.as_ref().unwrap();
 
     if (chunk_len == 0) {
         let mut fin_header = Header{action:headers::SERVER_STREAM_FINISHED, length:chunk_len};
-        fin_header.send(&mut con.socket).unwrap();
-        con.socket.write(&usize::to_be_bytes(song.artist.len()));
-        con.socket.write(&usize::to_be_bytes(song.album.len()));
-        con.socket.write(&usize::to_be_bytes(song.name.len()));
-        con.socket.write(&mut song.artist.as_bytes());
-        con.socket.write(&mut song.album.as_bytes());
-        con.socket.write(&mut song.name.as_bytes());
-        con.state = State::Idle;
-        con.song = None;
-        con.file = None; // TODO: maybe clean up? Rust might just magically close the file tho
+        fin_header.send(&mut doom.socket).unwrap();
+        doom.socket.write(&usize::to_be_bytes(song.artist.len()));
+        doom.socket.write(&usize::to_be_bytes(song.album.len()));
+        doom.socket.write(&usize::to_be_bytes(song.name.len()));
+        doom.socket.write(&mut song.artist.as_bytes());
+        doom.socket.write(&mut song.album.as_bytes());
+        doom.socket.write(&mut song.name.as_bytes());
+        doom.state = State::Idle;
+        doom.song = None;
+        doom.file = None; // TODO: maybe clean up? Rust might just magically close the file tho
     } else {
         let mut chunk_header = Header{action:headers::SERVER_STREAM_CHUNK, length:chunk_len};
-        chunk_header.send(&mut con.socket).unwrap();
-        con.socket.write(&usize::to_be_bytes(song.artist.len()));
-        con.socket.write(&usize::to_be_bytes(song.album.len()));
-        con.socket.write(&usize::to_be_bytes(song.name.len()));
-        con.socket.write(&mut song.artist.as_bytes());
-        con.socket.write(&mut song.album.as_bytes());
-        con.socket.write(&mut song.name.as_bytes());
-        con.socket.write(&data);
+        chunk_header.send(&mut doom.socket).unwrap();
+        doom.socket.write(&usize::to_be_bytes(song.artist.len()));
+        doom.socket.write(&usize::to_be_bytes(song.album.len()));
+        doom.socket.write(&usize::to_be_bytes(song.name.len()));
+        doom.socket.write(&mut song.artist.as_bytes());
+        doom.socket.write(&mut song.album.as_bytes());
+        doom.socket.write(&mut song.name.as_bytes());
+        doom.socket.write(&data);
     }
 
-    let header = get_header_from_stream(&mut con.socket);
+    let header = get_header_from_stream(&mut doom.socket);
     if (header.action != headers::CLIENT_ACK) {
         print!("got a response, but it wasn't ack");
     }
 }
 
-fn clean_up(con: &mut Connection) {
+fn clean_up(doom: &mut DoomrakrWorker) {
     // TODO: :3
 }
 
-fn start_heartbeating(con_mutex: Arc<Mutex<Connection>>) {
+fn start_heartbeating(doom_mutex: Arc<Mutex<DoomrakrWorker>>) {
     thread::spawn(move || {
-        con_main(Arc::clone(&con_mutex))
+        doom_main(Arc::clone(&doom_mutex))
     });
 }
 
-impl Connection {
+impl DoomrakrWorker {
 
-    pub fn init_connection(mut socket: &mut TcpStream) -> Arc<Mutex<Connection>> {
+    pub fn init_connection(mut socket: &mut TcpStream) -> Arc<Mutex<DoomrakrWorker>> {
         let header = get_header_from_stream(socket);
         if header.action != headers::CLIENT_HELLO {
             println!("Got header but it's not a hello? Let's see what happens. action: {} length: {}",
@@ -138,15 +138,15 @@ impl Connection {
         socket.read(&mut client_id_bytes).expect("Failed to read bytes");
         let mut ack_header = Header{action: 1, length:0};
         ack_header.send(&mut socket).unwrap(); // :J
-        let con_mutex = Arc::new(Mutex::new(Connection{
+        let doom_mutex = Arc::new(Mutex::new(DoomrakrWorker{
                                 client_id: String::from_utf8(client_id_bytes).unwrap(),
                                 socket: socket.try_clone().unwrap(),
                                 state: State::Idle,
                                 is_changed: false,
                                 song: Option::None,
                                 file: Option::None}));
-        start_heartbeating(con_mutex.clone());
-        con_mutex
+        start_heartbeating(doom_mutex.clone());
+        doom_mutex
     }
 
     // TODO: refactor this stuff to use some sort of ByteBuffer class if it exists in rust
