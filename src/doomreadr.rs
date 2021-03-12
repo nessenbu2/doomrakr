@@ -49,14 +49,14 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
 
 fn maybe_heartbeat(doom: &mut Doomreadr) -> Result<(), String> {
     if SystemTime::now().duration_since(doom.last_hb_time).unwrap().as_secs() >= 1 {
-        let mut msg_header = Header::new(headers::CLIENT_HB, doom.client_id.clone());
+        let msg_header = Header::new(headers::CLIENT_HB, doom.client_id.clone());
         msg_header.send(&mut doom.con)?;
         doom.last_hb_time = SystemTime::now();
     }
     Ok(())
 }
 
-fn recv_ack(doom: &mut Doomreadr, header: &Header) {
+fn recv_ack(_doom: &mut Doomreadr, _header: &Header) {
     // NOOP
 }
 
@@ -69,12 +69,12 @@ fn init_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
     println!("Artist: {}, Album: {}, Song: {}", song.artist, song.album, song.name);
 
     if Player::is_song_cached(&song) || Player::is_song_streaming(&song) {
-        let mut cached_song_header = Header::new(headers::CLIENT_SONG_CACHED, doom.client_id.clone());
+        let cached_song_header = Header::new(headers::CLIENT_SONG_CACHED, doom.client_id.clone());
         cached_song_header.send(&mut doom.con)?;
         doom.player.play(&song);
     } else {
         Player::init_stream(&song);
-        let mut ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
+        let ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
         ack_header.send(&mut doom.con)?;
     }
     Ok(())
@@ -88,7 +88,7 @@ fn recv_chunk(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
 
     Player::add_chunk(&song, &mut data);
 
-    let mut ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
+    let ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
     ack_header.send(&mut doom.con)?;
     Ok(())
 }
@@ -100,7 +100,7 @@ fn finish_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
 
     doom.player.play(&song);
 
-    let mut ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
+    let ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
     ack_header.send(&mut doom.con)?;
     Ok(())
 }
@@ -113,7 +113,7 @@ fn pause_play(doom: &mut Doomreadr, header: &Header) {
 
 impl Doomreadr {
     pub fn run(&mut self) {
-        let mut hello_header = Header::new(headers::CLIENT_HELLO, self.client_id.clone());
+        let hello_header = Header::new(headers::CLIENT_HELLO, self.client_id.clone());
         hello_header.send(&mut self.con).unwrap();
         loop {
             match check_for_commands(self) {
