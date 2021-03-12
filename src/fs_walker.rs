@@ -25,7 +25,7 @@ impl Song {
 }
 
 impl ConnectionGet for Song {
-    fn get(&self, con: &mut Connection) -> Result<Self, String> where Self: Sized {
+    fn get(con: &mut Connection) -> Result<Self, String> where Self: Sized {
         let mut length = [0 as u8; 8];
         // Read lenghts of song names
         con.get(&mut length)?;

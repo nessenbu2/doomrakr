@@ -19,10 +19,16 @@ pub trait ConnectionSend {
 
 // Returns the number of bytes read or an error message
 pub trait ConnectionGet {
-    fn get(&self, con: &mut Connection) -> Result<Self, String> where Self: Sized;
+    fn get(con: &mut Connection) -> Result<Self, String> where Self: Sized;
 }
 
 impl Connection {
+    pub fn new(stream: TcpStream) -> Connection {
+        Connection {
+            stream: stream 
+        }
+    }
+
     pub fn send(&mut self, buf: &[u8]) -> Result<usize, String> {
         match self.stream.write(buf) {
             Ok(bytes) => Ok(bytes),
@@ -38,6 +44,11 @@ impl Connection {
     }
 
     pub fn has_data(&self) -> bool {
-        false
+        let mut peek = [0 as u8; 1];
+        match self.stream.peek(&mut peek) {
+            Ok(_) => true,
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => false,
+            Err(e) => panic!("hit some IO error {}", e)
+        }
     }
 }

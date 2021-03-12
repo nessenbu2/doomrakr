@@ -17,7 +17,7 @@ pub const CLIENT_SONG_CACHED: u8 = 8;
 
 pub struct Header {
     pub action: u8,
-    pub length: usize
+    pub id: String,
 }
 
 impl ConnectionSend for Header {
@@ -26,7 +26,11 @@ impl ConnectionSend for Header {
             Ok(bytes) => bytes,
             Err(error) => return Err(error)
         };
-        written + match con.send(&usize::to_be_bytes(self.length)) {
+        written + match con.send(&usize::to_be_bytes(self.id.len())) {
+            Ok(bytes) => bytes,
+            Err(error) => return Err(error)
+        };
+        written + match con.send(self.id.as_bytes()) {
             Ok(bytes) => bytes,
             Err(error) => return Err(error)
         };
@@ -35,30 +39,30 @@ impl ConnectionSend for Header {
 }
 
 impl ConnectionGet for Header {
-    fn get(&self, con: &mut Connection) -> Result<Self, String> {
+    fn get(con: &mut Connection) -> Result<Self, String> {
         let mut action = [0 as u8; 1];
         let mut length = [0 as u8; 8];
         // TODO check that the right amount of bytes were read
         con.get(&mut action)?;
         con.get(&mut length)?;
-        Ok(Header {action: u8::from_be_bytes(action), length: usize::from_be_bytes(length)})
+        let length = usize::from_be_bytes(length);
+        let mut id_bytes = vec![0u8; length];
+        con.get(&mut id_bytes)?;
+        let id = match String::from_utf8(id_bytes) {
+            Ok(id) => id,
+            Err(message) => return Err(message.to_string())
+        };
+
+        Ok(Header::new(u8::from_be_bytes(action), id))
     }
 }
 
 impl Header {
-    pub fn send(&mut self, stream: &mut TcpStream) -> io::Result<usize> {
-        stream.write(&u8::to_be_bytes(self.action))
-            .and_then(|_| stream.write(&usize::to_be_bytes(self.length)))
+    pub fn new(action: u8, id: String) -> Header {
+        Header {
+            action: action,
+            id: id
+        }
     }
 }
 
-
-// It's assumed that buf is empty. It only appends, so guess if you want that
-// it'll work, but you're a braver man than I
-pub fn get_header_from_stream(stream: &mut TcpStream) -> Header {
-    let mut action = [0 as u8; 1];
-    let mut length = [0 as u8; 8];
-    stream.read(&mut action).unwrap(); // TODO :)
-    stream.read(&mut length).unwrap(); // TODO :)
-    Header {action: u8::from_be_bytes(action), length: usize::from_be_bytes(length)}
-}

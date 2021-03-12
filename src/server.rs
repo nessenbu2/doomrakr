@@ -5,6 +5,7 @@ mod doomrakr;
 mod doomrakr_worker;
 mod con;
 
+use con::Connection;
 use doomrakr::Doomrakr;
 use doomrakr_worker::DoomrakrWorker;
 
@@ -27,7 +28,8 @@ fn main() {
             match stream {
                 Ok(mut socket) => {
                     println!("New connection: {}", socket.peer_addr().unwrap());
-                    doom_ref.lock().unwrap().handle_new_con(DoomrakrWorker::init_connection(&mut socket));
+                    doom_ref.lock().unwrap().handle_new_con(
+                        DoomrakrWorker::init_connection(Connection::new(socket)));
                 }
                 Err(e) => {
                     println!("Error: {}", e);
