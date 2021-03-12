@@ -26,22 +26,16 @@ pub struct Doomreadr {
     // may want a last_ack_time if i wanna be really robust
 }
 
-fn check_for_commands(doom: &mut Doomreadr) {
+fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
     if (doom.con.has_data()) {
-        let header = match Header::get(&mut doom.con) {
-            Ok(header) => header,
-            Err(message) => {
-                println!("{}", message);
-                return;
-            }
-        };
+        let header = Header::get(&mut doom.con)?;
 
         println!("got header. action {}", header.action);
         match header.action {
             headers::SERVER_ACK => recv_ack(doom, &header),
-            headers::SERVER_INIT_STREAM => init_stream(doom, &header),
-            headers::SERVER_STREAM_CHUNK => recv_chunk(doom, &header),
-            headers::SERVER_STREAM_FINISHED => finish_stream(doom, &header),
+            headers::SERVER_INIT_STREAM => init_stream(doom, &header)?,
+            headers::SERVER_STREAM_CHUNK => recv_chunk(doom, &header)?,
+            headers::SERVER_STREAM_FINISHED => finish_stream(doom, &header)?,
             headers::SERVER_START => start_play(doom, &header),
             headers::SERVER_PAUSE => pause_play(doom, &header),
             // TODO: skip maybe? idk
@@ -50,71 +44,65 @@ fn check_for_commands(doom: &mut Doomreadr) {
     } else {
         // NOOP
     }
+    Ok(())
 }
 
-fn maybe_heartbeat(doom: &mut Doomreadr) {
+fn maybe_heartbeat(doom: &mut Doomreadr) -> Result<(), String> {
     if SystemTime::now().duration_since(doom.last_hb_time).unwrap().as_secs() >= 1 {
         let mut msg_header = Header::new(headers::CLIENT_HB, doom.client_id.clone());
-        match msg_header.send(&mut doom.con) {
-            Ok(_) => (), // NOOP
-            Err(message) => {
-                println!("{}", message);
-                return;
-            }
-        }
+        msg_header.send(&mut doom.con)?;
         doom.last_hb_time = SystemTime::now();
     }
+    Ok(())
 }
 
 fn recv_ack(doom: &mut Doomreadr, header: &Header) {
     // NOOP
 }
 
-fn init_stream(doom: &mut Doomreadr, header: &Header) {
+fn init_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
     println!("got a request to init a stream. id: {}", header.id);
 
-    let song = match Song::get(&mut doom.con) {
-        Ok(song) => song,
-        Err(err) => {
-            println!("{}", err);
-            return;
-        }
-    };
+    let song = Song::get(&mut doom.con)?;
 
     println!("Got request to stream a song");
     println!("Artist: {}, Album: {}, Song: {}", song.artist, song.album, song.name);
 
     if Player::is_song_cached(&song) || Player::is_song_streaming(&song) {
         let mut cached_song_header = Header::new(headers::CLIENT_SONG_CACHED, doom.client_id.clone());
-        cached_song_header.send(&mut doom.con);
+        cached_song_header.send(&mut doom.con)?;
         doom.player.play(&song);
     } else {
         Player::init_stream(&song);
         let mut ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
-        ack_header.send(&mut doom.con);
+        ack_header.send(&mut doom.con)?;
     }
+    Ok(())
 }
 
-fn recv_chunk(doom: &mut Doomreadr, header: &Header) {
+fn recv_chunk(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
+    // TODO: send and recv a length of the chunk
     let mut data = [0 as u8; 4096];
-    let song = Song::get(&mut doom.con).unwrap();
-    let read = doom.con.get(&mut data).unwrap();
+    let song = Song::get(&mut doom.con)?;
+    let read = doom.con.get(&mut data)?;
 
     Player::add_chunk(&song, &mut data);
 
     let mut ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
-    ack_header.send(&mut doom.con);
+    ack_header.send(&mut doom.con)?;
+    Ok(())
 }
 
-fn finish_stream(doom: &mut Doomreadr, header: &Header) {
+fn finish_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
 
-    let song = Song::get(&mut doom.con).unwrap();
+    let song = Song::get(&mut doom.con)?;
     Player::complete_stream(&song);
 
     doom.player.play(&song);
 
     let mut ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
-    ack_header.send(&mut doom.con);
+    ack_header.send(&mut doom.con)?;
+    Ok(())
 }
 
 fn start_play(doom: &mut Doomreadr, header: &Header) {
@@ -128,8 +116,14 @@ impl Doomreadr {
         let mut hello_header = Header::new(headers::CLIENT_HELLO, self.client_id.clone());
         hello_header.send(&mut self.con).unwrap();
         loop {
-            check_for_commands(self);
-            maybe_heartbeat(self);
+            match check_for_commands(self) {
+                Ok(_) => (),
+                Err(message) => println!("{}", message)
+            }
+            match maybe_heartbeat(self) {
+                Ok(_) => (),
+                Err(message) => println!("{}", message)
+            }
         }
     }
 

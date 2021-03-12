@@ -1,6 +1,3 @@
-use std::net::{TcpStream};
-use std::io::{self, Read, Write};
-
 use crate::con::{Connection, ConnectionSend, ConnectionGet};
 
 // ACTIONS
@@ -22,15 +19,15 @@ pub struct Header {
 
 impl ConnectionSend for Header {
     fn send(&self, con: &mut Connection) -> Result<usize, String> {
-        let mut written = match con.send(&u8::to_be_bytes(self.action)) {
+        let written = match con.send(&u8::to_be_bytes(self.action)) {
             Ok(bytes) => bytes,
             Err(error) => return Err(error)
         };
-        written + match con.send(&usize::to_be_bytes(self.id.len())) {
+        let written = written + match con.send(&usize::to_be_bytes(self.id.len())) {
             Ok(bytes) => bytes,
             Err(error) => return Err(error)
         };
-        written + match con.send(self.id.as_bytes()) {
+        let written = written + match con.send(self.id.as_bytes()) {
             Ok(bytes) => bytes,
             Err(error) => return Err(error)
         };

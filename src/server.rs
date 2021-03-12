@@ -26,7 +26,7 @@ fn main() {
     loop {
         for stream in listener.incoming() {
             match stream {
-                Ok(mut socket) => {
+                Ok(socket) => {
                     println!("New connection: {}", socket.peer_addr().unwrap());
                     doom_ref.lock().unwrap().handle_new_con(
                         DoomrakrWorker::init_connection(Connection::new(socket)));

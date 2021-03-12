@@ -2,15 +2,12 @@ use crate::headers;
 use crate::fs_walker::Song;
 use crate::con::{Connection, ConnectionGet, ConnectionSend};
 
-use std::vec::Vec;
 use std::sync::{Arc, Mutex};
-use std::net::TcpStream;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::ops::DerefMut;
 use std::{thread, time};
 use std::option::Option;
 use headers::Header;
-use std::mem;
 use std::fs::File;
 
 enum State {
@@ -60,11 +57,11 @@ fn doom_main(doom_ref: Arc<Mutex<DoomrakrWorker>>) {
 fn heartbeat(doom: &mut DoomrakrWorker) {
 
     if doom.con.has_data() {
-        let header = Header::get(&mut doom.con);
+        let _header = Header::get(&mut doom.con);
         // Currently just dropping pings from the clients. Should probably manage them somehow
     }
 
-    let mut ack_header = Header::new(headers::SERVER_ACK, doom.client_id.clone());
+    let ack_header = Header::new(headers::SERVER_ACK, doom.client_id.clone());
     match ack_header.send(&mut doom.con) {
         Ok(_) => (),
         Err(error) => println!("{}", error)
@@ -78,8 +75,8 @@ fn send_chunk(doom: &mut DoomrakrWorker) {
     // write song "metadata"
     let song = doom.song.as_ref().unwrap();
 
-    if (chunk_len == 0) {
-        let mut fin_header = Header::new(headers::SERVER_STREAM_FINISHED, doom.id.clone());
+    if chunk_len == 0 {
+        let fin_header = Header::new(headers::SERVER_STREAM_FINISHED, doom.id.clone());
         match fin_header.send(&mut doom.con) {
             Ok(_) => (),
             Err(message) => {
@@ -98,7 +95,7 @@ fn send_chunk(doom: &mut DoomrakrWorker) {
         doom.song = None;
         doom.file = None; // TODO: maybe clean up? Rust might just magically close the file tho
     } else {
-        let mut chunk_header = Header::new(headers::SERVER_STREAM_CHUNK, doom.id.clone());
+        let chunk_header = Header::new(headers::SERVER_STREAM_CHUNK, doom.id.clone());
         match chunk_header.send(&mut doom.con) {
             Ok(_) => (),
             Err(message) => {
@@ -123,12 +120,12 @@ fn send_chunk(doom: &mut DoomrakrWorker) {
     }
 
     let header = Header::get(&mut doom.con).unwrap(); // TODO: return for this should be a result
-    if (header.action != headers::CLIENT_ACK) {
+    if header.action != headers::CLIENT_ACK {
         print!("got a response, but it wasn't ack. Don't freak out, but it's probably busted");
     }
 }
 
-fn clean_up(doom: &mut DoomrakrWorker) {
+fn clean_up(_doom: &mut DoomrakrWorker) {
     // TODO: :3
 }
 
@@ -146,7 +143,7 @@ impl DoomrakrWorker {
                      header.action, header.id);
         }
 
-        let mut ack_header = Header::new(headers::SERVER_ACK, header.id.clone());
+        let ack_header = Header::new(headers::SERVER_ACK, header.id.clone());
         ack_header.send(&mut con).unwrap();
 
         let doom_mutex = Arc::new(Mutex::new(DoomrakrWorker{

@@ -7,23 +7,23 @@ use std::fs::OpenOptions;
 use crate::fs_walker;
 use crate::fs_walker::Song;
 
-const base_path: &str = "/tmp/doomrakr";
-const streaming_path: &str = "/tmp/doomrakr/streaming";
+const BASE_PATH: &str = "/tmp/doomrakr";
+const STREAMING_PATH: &str = "/tmp/doomrakr/streaming";
 
 fn get_path_for_song(song: &Song) -> String {
-    format!("{}/{}", base_path, fs_walker::Song::get_path(song))
+    format!("{}/{}", BASE_PATH, fs_walker::Song::get_path(song))
 }
 
 fn get_for_stream(song: &Song) -> String {
-    format!("{}/{}", streaming_path, fs_walker::Song::get_path(song))
+    format!("{}/{}", STREAMING_PATH, fs_walker::Song::get_path(song))
 }
 
 fn get_dir_for_song(song: &Song) -> String {
-    format!("{}/{}/{}", base_path, song.artist, song.album)
+    format!("{}/{}/{}", BASE_PATH, song.artist, song.album)
 }
 
 fn get_dir_for_stream(song: &Song) -> String {
-    format!("{}/{}/{}", streaming_path, song.artist, song.album)
+    format!("{}/{}/{}", STREAMING_PATH, song.artist, song.album)
 }
 
 pub struct Player {
@@ -38,7 +38,7 @@ impl Player {
 
         // TODO: probably check if this is a file or not?
         //       also add a helper
-        match std::fs::create_dir(Path::new(base_path)) {
+        match std::fs::create_dir(Path::new(BASE_PATH)) {
             Ok(_) => (),
             Err(e) => {
                 if e.kind() != ErrorKind::AlreadyExists {
@@ -47,8 +47,12 @@ impl Player {
             }
         }
         // Don't mess this up :)
-        std::fs::remove_dir_all(streaming_path);
-        match std::fs::create_dir(Path::new(streaming_path)) {
+        match std::fs::remove_dir_all(STREAMING_PATH) {
+            Ok(_) => (),
+            Err(e) => panic!("Can't purge songs that failed to stream: {}, e")
+        };
+
+        match std::fs::create_dir(Path::new(STREAMING_PATH)) {
             Ok(_) => (),
             Err(e) => {
                 if e.kind() != ErrorKind::AlreadyExists {
@@ -113,12 +117,15 @@ impl Player {
 
     pub fn add_chunk(song: &Song, data: &mut [u8; 4096]) {
         let path = get_for_stream(song);
-        OpenOptions::new()
+        match OpenOptions::new()
             .append(true)
             .create(true)
             .open(path)
             .unwrap()
-            .write(data);
+            .write(data) {
+                Ok(_) => (),
+                Err(err) => print!("{}", err.to_string())
+            };
     }
 
     pub fn complete_stream(song: &Song) {
@@ -132,7 +139,10 @@ impl Player {
         }
         let path = get_for_stream(song);
         let mv_path = get_path_for_song(song);
-        std::fs::rename(path, mv_path);
+        match std::fs::rename(path, mv_path) {
+            Ok(_) => (),
+            Err(err) => println!("{}", err.to_string())
+        }
     }
 }
 

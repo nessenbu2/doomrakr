@@ -1,10 +1,9 @@
-use crate::headers;
 use crate::doomrakr_worker;
 use crate::fs_walker::{Directory, Song};
 use crate::logger::logger::log;
 
 use std::{thread, time};
-use std::ops::{Deref, DerefMut};
+use std::ops::DerefMut;
 use doomrakr_worker::DoomrakrWorker;
 use std::sync::{Arc, Mutex};
 use std::io::stdin;
@@ -25,7 +24,7 @@ fn get_client_selection(max_num: usize) -> Result<usize, String> {
         Err(error) => return Err(error.to_string())
     };
 
-    if con_num > max_num || con_num < 0 {
+    if con_num > max_num {
         return Err(format!("Invalid connection number. select a number between 0 and {}",
                            max_num));
     }
@@ -58,7 +57,7 @@ impl Doomrakr {
         let doom_ref = doom.clone();
         thread::spawn(move || {
             loop {
-                let mut doom = doom_ref.lock().unwrap();
+                let doom = doom_ref.lock().unwrap();
                 if doom.workers.is_empty() {
                     drop(doom);
                     log("No current connections. Sleeping");
@@ -81,7 +80,7 @@ impl Doomrakr {
                 };
 
                 // Not ideal to block on input here :(
-                let mut doom = doom_ref.lock().unwrap();
+                let doom = doom_ref.lock().unwrap();
                 let song = match doom.get_song_selection() {
                     Ok(song) => song,
                     Err(error) => {
