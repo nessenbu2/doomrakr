@@ -25,7 +25,10 @@ fn get_dir_for_stream(song: &Song) -> String {
 }
 
 pub struct Player {
-    queue: LinkedList<Song>,
+    // Songs not yet fed to the sink
+    queued_songs: LinkedList<Song>,
+    // Songs already fed to the sink. This shouldn't be more than 2
+    playing_songs: LinkedList<Song>,
     // Marked witn '_' since we need to keep the stream in scope
     // or rodio won't be able to play. Currently, this isn't used
     _stream: rodio::OutputStream,
@@ -66,24 +69,15 @@ impl Player {
         }
 
         Player {
-            queue: LinkedList::new(),
+            queued_songs: LinkedList::new(),
+            playing_songs: LinkedList::new(),
             _stream: stream,
             sink: rodio::Sink::try_new(&handle).unwrap()
         }
     }
 
-    pub fn play(&mut self, song: &Song) {
-        let path = get_path_for_song(song);
-
-        // TODO: handle cases where this doesn't exists
-        let song_file = std::fs::File::open(path).unwrap();
-        self.sink.append(rodio::Decoder::new(BufReader::new(song_file)).unwrap());
-        self.sink.pause();
-        println!("pauesd: {}", self.sink.is_paused());
-        self.sink.play();
-        println!("pauesd: {}", self.sink.is_paused());
-        println!("volume: {}", self.sink.volume());
-        println!("len: {}", self.sink.len());
+    pub fn play(&mut self, song: Song) {
+        self.queued_songs.push_back(song);
     }
 
     // Rethink these. Can probably do this waaaaay smarter
@@ -146,6 +140,32 @@ impl Player {
         match std::fs::rename(path, mv_path) {
             Ok(_) => (),
             Err(err) => println!("{}", err.to_string())
+        }
+    }
+
+    pub fn maybe_enquque_song(&mut self) {
+        // First make sure playing_songs reflects the sink length
+        while self.sink.len() < self.playing_songs.len() {
+            self.playing_songs.pop_front();
+        }
+
+        if self.sink.len() > self.playing_songs.len() {
+            println!("sink len is greater than our queue len somehow. sink len: {}, queue len: {}",
+                     self.sink.len(), self.playing_songs.len());
+        }
+
+        if self.sink.len() < 2 {
+            match self.queued_songs.pop_front() {
+                None => (),
+                Some(song) => {
+                    let path = get_path_for_song(&song);
+                    self.playing_songs.push_back(song);
+
+                    // TODO: handle cases where this doesn't exists
+                    let song_file = std::fs::File::open(path).unwrap();
+                    self.sink.append(rodio::Decoder::new(BufReader::new(song_file)).unwrap());
+                }
+            }
         }
     }
 }

@@ -60,7 +60,7 @@ fn init_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
     if Player::is_song_cached(&song) || Player::is_song_streaming(&song) {
         let cached_song_header = Header::new(headers::CLIENT_SONG_CACHED, doom.client_id.clone());
         cached_song_header.send(&mut doom.con)?;
-        doom.player.play(&song);
+        doom.player.play(song);
     } else {
         Player::init_stream(&song);
         let ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
@@ -88,7 +88,7 @@ fn finish_stream(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     let song = Song::get(&mut doom.con)?;
     Player::complete_stream(&song);
 
-    doom.player.play(&song);
+    doom.player.play(song);
 
     let ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
     ack_header.send(&mut doom.con)?;
@@ -114,6 +114,7 @@ impl Doomreadr {
                 Ok(_) => (),
                 Err(message) => println!("{}", message)
             }
+            self.player.maybe_enquque_song();
         }
     }
 
