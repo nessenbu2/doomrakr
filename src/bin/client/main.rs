@@ -1,13 +1,12 @@
-mod headers;
-mod player;
 mod doomreadr;
-mod fs_walker;
-mod con;
+mod player;
 
-use doomreadr::Doomreadr;
-use con::Connection;
 use std::net::{TcpStream};
 use std::time::Duration;
+
+use doomrakr::con::Connection;
+
+use doomreadr::Doomreadr;
 
 fn main() {
     let mut client_id = String::new();

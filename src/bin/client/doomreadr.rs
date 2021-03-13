@@ -1,14 +1,14 @@
-use crate::headers;
-use crate::player;
-use crate::fs_walker::Song;
-use crate::con::{Connection, ConnectionGet, ConnectionSend};
-
 use std::time::SystemTime;
 use std::net::TcpStream;
 use std::io::{Read, Write, BufReader};
-use headers::Header;
-use player::Player;
 use std::fs::OpenOptions;
+
+use doomrakr::headers;
+use doomrakr::headers::Header;
+use doomrakr::song::Song;
+use doomrakr::con::{Connection, ConnectionGet, ConnectionSend};
+
+use crate::player::Player;
 
 enum ClientState {
     Idle,

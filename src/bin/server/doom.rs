@@ -1,12 +1,12 @@
-use crate::doomrakr_worker;
-use crate::fs_walker::{Directory, Song};
-use crate::logger::logger::log;
-
 use std::{thread, time};
 use std::ops::DerefMut;
-use doomrakr_worker::DoomrakrWorker;
 use std::sync::{Arc, Mutex};
 use std::io::stdin;
+
+use doomrakr::song::Song;
+
+use crate::fs_walker::Directory;
+use crate::doomrakr_worker::DoomrakrWorker;
 
 // String.trim() doesn't seem like it actually trims? or it only gets tabs and
 // spaces but not new lines.
@@ -60,7 +60,7 @@ impl Doomrakr {
                 let doom = doom_ref.lock().unwrap();
                 if doom.workers.is_empty() {
                     drop(doom);
-                    log("No current connections. Sleeping");
+                    //log("No current connections. Sleeping");
                     thread::sleep(time::Duration::from_millis(1000));
                     continue;
                 }

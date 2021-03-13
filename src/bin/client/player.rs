@@ -4,18 +4,17 @@ use std::path::Path;
 use std::fs::File;
 use std::fs::OpenOptions;
 
-use crate::fs_walker;
-use crate::fs_walker::Song;
+use doomrakr::song::Song;
 
 const BASE_PATH: &str = "/tmp/doomrakr";
 const STREAMING_PATH: &str = "/tmp/doomrakr/streaming";
 
 fn get_path_for_song(song: &Song) -> String {
-    format!("{}/{}", BASE_PATH, fs_walker::Song::get_path(song))
+    format!("{}/{}", BASE_PATH, Song::get_path(song))
 }
 
 fn get_for_stream(song: &Song) -> String {
-    format!("{}/{}", STREAMING_PATH, fs_walker::Song::get_path(song))
+    format!("{}/{}", STREAMING_PATH, Song::get_path(song))
 }
 
 fn get_dir_for_song(song: &Song) -> String {
@@ -49,7 +48,11 @@ impl Player {
         // Don't mess this up :)
         match std::fs::remove_dir_all(STREAMING_PATH) {
             Ok(_) => (),
-            Err(e) => panic!("Can't purge songs that failed to stream: {}, e")
+            Err(e) => {
+                if e.kind() != ErrorKind::NotFound {
+                    panic!("Can't purge songs that failed to stream: {}", e)
+                }
+            }
         };
 
         match std::fs::create_dir(Path::new(STREAMING_PATH)) {

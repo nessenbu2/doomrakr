@@ -1,14 +1,14 @@
-use crate::headers;
-use crate::fs_walker::Song;
-use crate::con::{Connection, ConnectionGet, ConnectionSend};
-
 use std::sync::{Arc, Mutex};
 use std::io::Read;
 use std::ops::DerefMut;
 use std::{thread, time};
 use std::option::Option;
-use headers::Header;
 use std::fs::File;
+
+use doomrakr::headers;
+use doomrakr::headers::Header;
+use doomrakr::song::Song;
+use doomrakr::con::{Connection, ConnectionGet, ConnectionSend};
 
 enum State {
     Idle,

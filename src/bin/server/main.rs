@@ -1,12 +1,10 @@
-mod logger;
-mod fs_walker;
-mod headers;
-mod doomrakr;
+// Maybe this is the rust way of doing things?
+mod doom;
 mod doomrakr_worker;
-mod con;
+mod fs_walker;
 
-use con::Connection;
-use doomrakr::Doomrakr;
+use doomrakr::con::Connection;
+use doom::Doomrakr;
 use doomrakr_worker::DoomrakrWorker;
 
 use std::net::TcpListener;
