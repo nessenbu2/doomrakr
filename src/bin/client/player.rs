@@ -26,7 +26,9 @@ fn get_dir_for_stream(song: &Song) -> String {
 
 pub struct Player {
     queue: LinkedList<Song>,
-    stream: rodio::OutputStream,
+    // Marked witn '_' since we need to keep the stream in scope
+    // or rodio won't be able to play. Currently, this isn't used
+    _stream: rodio::OutputStream,
     sink: rodio::Sink
 }
 
@@ -65,7 +67,7 @@ impl Player {
 
         Player {
             queue: LinkedList::new(),
-            stream: stream,
+            _stream: stream,
             sink: rodio::Sink::try_new(&handle).unwrap()
         }
     }
