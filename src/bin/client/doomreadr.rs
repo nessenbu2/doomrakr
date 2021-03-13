@@ -7,17 +7,9 @@ use doomrakr::con::{Connection, ConnectionGet, ConnectionSend};
 
 use crate::player::Player;
 
-enum ClientState {
-    Idle,
-    Playing,
-    Paused,
-    Closed
-}
-
 pub struct Doomreadr {
     client_id: String,
     con: Connection,
-    state: ClientState,
     last_hb_time: SystemTime,
     player: Player
     // may want a last_ack_time if i wanna be really robust
@@ -129,7 +121,6 @@ impl Doomreadr {
         Doomreadr{
             client_id: client_id,
             con: con,
-            state: ClientState::Idle,
             last_hb_time: SystemTime::now(),
             player: Player::new()
         }

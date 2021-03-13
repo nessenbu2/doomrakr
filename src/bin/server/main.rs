@@ -18,8 +18,8 @@ fn main() {
     let mut doom = Doomrakr::new();
     doom.init();
 
-    let doom_ref = Arc::new(Mutex::new(doom));
-    Doomrakr::run(&doom_ref);
+    let mut doom_ref = Arc::new(Mutex::new(doom));
+    Doomrakr::run(&mut doom_ref);
 
     loop {
         for stream in listener.incoming() {

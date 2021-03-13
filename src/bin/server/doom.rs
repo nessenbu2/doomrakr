@@ -37,7 +37,6 @@ pub struct Doomrakr  {
 }
 
 impl Doomrakr {
-
     fn print_client_info(&self) {
         let mut pos = 0;
         println!("Connected to {} clients", self.workers.len());
@@ -53,14 +52,14 @@ impl Doomrakr {
                  dir: Directory::new()}
     }
 
-    pub fn run(doom: &Arc<Mutex<Doomrakr>>) {
+    pub fn run(doom: &mut Arc<Mutex<Doomrakr>>) {
         let doom_ref = doom.clone();
         thread::spawn(move || {
             loop {
-                let doom = doom_ref.lock().unwrap();
+                let mut doom = doom_ref.lock().unwrap();
+                doom.clean_closed_connections();
                 if doom.workers.is_empty() {
                     drop(doom);
-                    //log("No current connections. Sleeping");
                     thread::sleep(time::Duration::from_millis(1000));
                     continue;
                 }
@@ -112,6 +111,12 @@ impl Doomrakr {
 
     pub fn init(&mut self) {
         self.dir.fetch_doom("/home/nick/music".to_string())
+    }
+
+    fn clean_closed_connections(&mut self) {
+        self.workers.retain(|worker| {
+            !worker.lock().unwrap().is_closed() 
+        })
     }
 
     fn get_song_selection(&self) -> Result<Song, String> {

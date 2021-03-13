@@ -10,6 +10,7 @@ use doomrakr::headers::Header;
 use doomrakr::song::Song;
 use doomrakr::con::{Connection, ConnectionGet, ConnectionSend};
 
+#[derive(PartialEq)]
 enum State {
     Idle,
     Streaming,
@@ -21,7 +22,6 @@ pub struct DoomrakrWorker {
     id: String,
     con: Connection,
     state: State,
-    is_changed: bool,
     // TODO: should try to hide this somewhere
     song: Option<Song>, // not valid if state is not Streaming
     file: Option<File> // also not valid if state is not Streaming
@@ -30,10 +30,6 @@ pub struct DoomrakrWorker {
 fn doom_main(doom_ref: Arc<Mutex<DoomrakrWorker>>) {
     loop {
         let mut doom = doom_ref.lock().unwrap();
-
-        if doom.is_changed {
-            // TODO
-        }
 
         match doom.state {
             State::Idle => heartbeat(doom.deref_mut()),
@@ -54,7 +50,7 @@ fn doom_main(doom_ref: Arc<Mutex<DoomrakrWorker>>) {
     }
 }
 
-fn heartbeat(doom: &mut DoomrakrWorker) {
+fn heartbeat(mut doom: &mut DoomrakrWorker) {
 
     if doom.con.has_data() {
         let _header = Header::get(&mut doom.con);
@@ -64,11 +60,11 @@ fn heartbeat(doom: &mut DoomrakrWorker) {
     let ack_header = Header::new(headers::SERVER_ACK, doom.client_id.clone());
     match ack_header.send(&mut doom.con) {
         Ok(_) => (),
-        Err(error) => println!("{}", error)
+        Err(error) => print_and_close(&mut doom, error)
     }
 }
 
-fn send_chunk(doom: &mut DoomrakrWorker) {
+fn send_chunk(mut doom: &mut DoomrakrWorker) {
     let mut data = [0 as u8; 4096];
     let chunk_len = doom.file.as_ref().unwrap().read(&mut data).unwrap();
 
@@ -80,14 +76,14 @@ fn send_chunk(doom: &mut DoomrakrWorker) {
         match fin_header.send(&mut doom.con) {
             Ok(_) => (),
             Err(message) => {
-                println!("{}", message);
+                print_and_close(&mut doom, message);
                 return;
             }
         };
         match song.send(&mut doom.con) {
             Ok(_) => (),
             Err(message) => {
-                println!("{}", message);
+                print_and_close(&mut doom, message);
                 return;
             }
         };
@@ -99,21 +95,21 @@ fn send_chunk(doom: &mut DoomrakrWorker) {
         match chunk_header.send(&mut doom.con) {
             Ok(_) => (),
             Err(message) => {
-                println!("{}", message);
+                print_and_close(&mut doom, message);
                 return;
             }
         };
         match song.send(&mut doom.con) {
             Ok(_) => (),
             Err(message) => {
-                println!("{}", message);
+                print_and_close(&mut doom, message);
                 return;
             }
         };
         match doom.con.send(&data) {
             Ok(_) => (),
             Err(message) => {
-                println!("{}", message);
+                print_and_close(&mut doom, message);
                 return;
             }
         }
@@ -126,13 +122,18 @@ fn send_chunk(doom: &mut DoomrakrWorker) {
 }
 
 fn clean_up(_doom: &mut DoomrakrWorker) {
-    // TODO: :3
+    // Currently do nothing but maybe we'll want to clean up state later
 }
 
 fn start_heartbeating(doom_mutex: Arc<Mutex<DoomrakrWorker>>) {
     thread::spawn(move || {
         doom_main(Arc::clone(&doom_mutex))
     });
+}
+
+fn print_and_close(doom: &mut DoomrakrWorker, message: String) {
+    println!("{}", message);
+    doom.state = State::Closed;
 }
 
 impl DoomrakrWorker {
@@ -151,7 +152,6 @@ impl DoomrakrWorker {
                                 id: String::from("MASTER"),
                                 con: con,
                                 state: State::Idle,
-                                is_changed: false,
                                 song: Option::None,
                                 file: Option::None}));
 
@@ -177,6 +177,10 @@ impl DoomrakrWorker {
         self.song = Some(song);
 
         self.state = State::Streaming
+    }
+
+    pub fn is_closed(&self) -> bool {
+        self.state == State::Closed
     }
 
 }
