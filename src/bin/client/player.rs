@@ -1,7 +1,6 @@
 use std::io::{BufReader, ErrorKind, Write};
 use std::collections::LinkedList;
 use std::path::Path;
-use std::fs::File;
 use std::fs::OpenOptions;
 
 use doomrakr::song::Song;

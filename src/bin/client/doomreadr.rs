@@ -1,7 +1,4 @@
 use std::time::SystemTime;
-use std::net::TcpStream;
-use std::io::{Read, Write, BufReader};
-use std::fs::OpenOptions;
 
 use doomrakr::headers;
 use doomrakr::headers::Header;
@@ -27,7 +24,7 @@ pub struct Doomreadr {
 }
 
 fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
-    if (doom.con.has_data()) {
+    if doom.con.has_data() {
         let header = Header::get(&mut doom.con)?;
 
         println!("got header. action {}", header.action);
@@ -80,11 +77,12 @@ fn init_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
     Ok(())
 }
 
-fn recv_chunk(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
+fn recv_chunk(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
+
     // TODO: send and recv a length of the chunk
     let mut data = [0 as u8; 4096];
     let song = Song::get(&mut doom.con)?;
-    let read = doom.con.get(&mut data)?;
+    doom.con.get(&mut data)?;
 
     Player::add_chunk(&song, &mut data);
 
@@ -93,7 +91,7 @@ fn recv_chunk(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
     Ok(())
 }
 
-fn finish_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
+fn finish_stream(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
 
     let song = Song::get(&mut doom.con)?;
     Player::complete_stream(&song);
@@ -105,10 +103,10 @@ fn finish_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
     Ok(())
 }
 
-fn start_play(doom: &mut Doomreadr, header: &Header) {
+fn start_play(_doom: &mut Doomreadr, _header: &Header) {
 }
 
-fn pause_play(doom: &mut Doomreadr, header: &Header) {
+fn pause_play(_doom: &mut Doomreadr, _header: &Header) {
 }
 
 impl Doomreadr {
