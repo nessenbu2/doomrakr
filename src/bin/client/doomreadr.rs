@@ -25,8 +25,8 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
             headers::SERVER_INIT_STREAM => init_stream(doom, &header)?,
             headers::SERVER_STREAM_CHUNK => recv_chunk(doom, &header)?,
             headers::SERVER_STREAM_FINISHED => finish_stream(doom, &header)?,
-            headers::SERVER_START => start_play(doom, &header),
-            headers::SERVER_PAUSE => pause_play(doom, &header),
+            headers::SERVER_RESUME => resume_play(doom, &header)?,
+            headers::SERVER_PAUSE => pause_play(doom, &header)?,
             // TODO: skip maybe? idk
             _ => println!("Didn't understand action: {}", header.action)
         }
@@ -60,7 +60,7 @@ fn init_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
     if Player::is_song_cached(&song) || Player::is_song_streaming(&song) {
         let cached_song_header = Header::new(headers::CLIENT_SONG_CACHED, doom.client_id.clone());
         cached_song_header.send(&mut doom.con)?;
-        doom.player.play(song);
+        doom.player.add_to_queue(song);
     } else {
         Player::init_stream(&song);
         let ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
@@ -88,17 +88,27 @@ fn finish_stream(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     let song = Song::get(&mut doom.con)?;
     Player::complete_stream(&song);
 
-    doom.player.play(song);
+    doom.player.add_to_queue(song);
 
     let ack_header = Header::new(headers::CLIENT_ACK, doom.client_id.clone());
     ack_header.send(&mut doom.con)?;
     Ok(())
 }
 
-fn start_play(_doom: &mut Doomreadr, _header: &Header) {
+fn resume_play(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
+    doom.player.resume();
+    let response_header = Header::new(headers::CLIENT_RESUMED, doom.client_id.clone());
+
+    response_header.send(&mut doom.con)?;
+    Ok(())
 }
 
-fn pause_play(_doom: &mut Doomreadr, _header: &Header) {
+fn pause_play(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
+    doom.player.pause();
+    let response_header = Header::new(headers::CLIENT_PAUSED, doom.client_id.clone());
+
+    response_header.send(&mut doom.con)?;
+    Ok(())
 }
 
 impl Doomreadr {

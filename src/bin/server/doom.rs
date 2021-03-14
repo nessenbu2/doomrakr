@@ -41,6 +41,10 @@ fn get_action() -> Result<fn(&Doomrakr) -> Result<usize, String>, String> {
 
     if action == "add" {
         Ok(add_to_queue)
+    } else if action == "resume" {
+        Ok(resume)
+    } else if action == "pause" {
+        Ok(pause)
     } else if action == "help" {
         Ok(print_command_info)
     } else  {
@@ -49,7 +53,7 @@ fn get_action() -> Result<fn(&Doomrakr) -> Result<usize, String>, String> {
 }
 
 fn print_command_info(_doom: &Doomrakr) -> Result<usize, String> {
-    // TODO
+    println!("TODO lol");
     Ok(0)
 }
 
@@ -65,6 +69,36 @@ fn add_to_queue(doom: &Doomrakr) -> Result<usize, String> {
         Some(worker_ref) => {
             println!("Sending song: {}/{}/{}", song.artist, song.album, song.name);
             worker_ref.lock().unwrap().deref_mut().send_song(song)
+        }
+    }
+}
+
+fn resume(doom: &Doomrakr) -> Result<usize, String> {
+    doom.print_client_info();
+    let max_num = doom.workers.len();
+
+    let worker_num = get_client_selection(max_num - 1)?;
+    match doom.workers.get(worker_num) {
+        None => Err("Not a valid client number".to_string()),
+        Some(worker_ref) => {
+            let mut worker = worker_ref.lock().unwrap();
+            println!("Pausing: {}", worker.client_id);
+            worker.deref_mut().resume()
+        }
+    }
+}
+
+fn pause(doom: &Doomrakr) -> Result<usize, String> {
+    doom.print_client_info();
+    let max_num = doom.workers.len();
+
+    let worker_num = get_client_selection(max_num - 1)?;
+    match doom.workers.get(worker_num) {
+        None => Err("Not a valid client number".to_string()),
+        Some(worker_ref) => {
+            let mut worker = worker_ref.lock().unwrap();
+            println!("Pausing: {}", worker.client_id);
+            worker.deref_mut().pause()
         }
     }
 }

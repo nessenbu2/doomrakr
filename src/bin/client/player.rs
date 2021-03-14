@@ -76,8 +76,16 @@ impl Player {
         }
     }
 
-    pub fn play(&mut self, song: Song) {
+    pub fn add_to_queue(&mut self, song: Song) {
         self.queued_songs.push_back(song);
+    }
+
+    pub fn pause(&mut self) {
+        self.sink.pause()
+    }
+
+    pub fn resume(&mut self) {
+        self.sink.play()
     }
 
     // Rethink these. Can probably do this waaaaay smarter

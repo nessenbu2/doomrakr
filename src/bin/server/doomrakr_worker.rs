@@ -159,12 +159,36 @@ impl DoomrakrWorker {
         doom_mutex
     }
 
+    pub fn resume(&mut self) -> Result<usize, String> {
+        let header = Header::new(headers::SERVER_RESUME, self.id.clone());
+        header.send(&mut self.con)?;
+
+        let ack = Header::get(&mut self.con)?;
+        if ack.action != headers::CLIENT_RESUMED {
+            Err("Failed to pause stream".to_string())
+        } else {
+            Ok(0)
+        }
+    }
+
+    pub fn pause(&mut self) -> Result<usize, String> {
+        let header = Header::new(headers::SERVER_PAUSE, self.id.clone());
+        header.send(&mut self.con)?;
+
+        let ack = Header::get(&mut self.con)?;
+        if ack.action != headers::CLIENT_PAUSED {
+            Err("Failed to pause stream".to_string())
+        } else {
+            Ok(0)
+        }
+    }
+
     pub fn send_song(&mut self, song: Song) -> Result<usize, String> {
         let header = Header::new(headers::SERVER_INIT_STREAM, self.id.clone());
         let sent = header.send(&mut self.con)?;
         let sent = sent + song.send(&mut self.con)?;
 
-        let ack = Header::get(&mut self.con).unwrap();
+        let ack = Header::get(&mut self.con)?;
         if ack.action == headers::CLIENT_SONG_CACHED {
             // Don't need to do anything :)
             return Ok(0);
