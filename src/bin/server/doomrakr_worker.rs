@@ -159,15 +159,15 @@ impl DoomrakrWorker {
         doom_mutex
     }
 
-    pub fn send_song(&mut self, song: Song) {
+    pub fn send_song(&mut self, song: Song) -> Result<usize, String> {
         let header = Header::new(headers::SERVER_INIT_STREAM, self.id.clone());
-        header.send(&mut self.con).unwrap();
-        song.send(&mut self.con).unwrap();
+        let sent = header.send(&mut self.con)?;
+        let sent = sent + song.send(&mut self.con)?;
 
         let ack = Header::get(&mut self.con).unwrap();
         if ack.action == headers::CLIENT_SONG_CACHED {
             // Don't need to do anything :)
-            return;
+            return Ok(0);
         }
 
         let base_path = "/home/nick/music";
@@ -176,7 +176,9 @@ impl DoomrakrWorker {
         self.file = Some(std::fs::File::open(path).unwrap());
         self.song = Some(song);
 
-        self.state = State::Streaming
+        self.state = State::Streaming;
+
+        Ok(sent)
     }
 
     pub fn is_closed(&self) -> bool {

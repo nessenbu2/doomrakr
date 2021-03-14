@@ -31,6 +31,44 @@ fn get_client_selection(max_num: usize) -> Result<usize, String> {
     return Ok(con_num);
 }
 
+fn get_action() -> Result<fn(&Doomrakr) -> Result<usize, String>, String> {
+    println!("Type an action or 'help' to get a list of commands");
+
+    let mut action = String::new();
+    stdin().read_line(&mut action).unwrap();
+    remove_whitespace(&mut action);
+    let action = action.to_lowercase();
+
+    if action == "add" {
+        Ok(add_to_queue)
+    } else if action == "help" {
+        Ok(print_command_info)
+    } else  {
+        Err(format!("Command not recognized: {}", action))
+    }
+}
+
+fn print_command_info(_doom: &Doomrakr) -> Result<usize, String> {
+    // TODO
+    Ok(0)
+}
+
+fn add_to_queue(doom: &Doomrakr) -> Result<usize, String> {
+    doom.print_client_info();
+    let max_num = doom.workers.len();
+
+    let worker_num = get_client_selection(max_num - 1)?;
+    let song = doom.get_song_selection()?;
+
+    match doom.workers.get(worker_num) {
+        None => Err("Not a valid client number".to_string()),
+        Some(worker_ref) => {
+            println!("Sending song: {}/{}/{}", song.artist, song.album, song.name);
+            worker_ref.lock().unwrap().deref_mut().send_song(song)
+        }
+    }
+}
+
 pub struct Doomrakr  {
     workers: Vec<Arc<Mutex<DoomrakrWorker>>>,
     dir: Directory
@@ -64,41 +102,21 @@ impl Doomrakr {
                     continue;
                 }
 
-                doom.print_client_info();
-                let max_num = doom.workers.len();
-                drop(doom);
-
-                // Should probably get by ID since it's possible for a connection to be
-                // removed while we block on inupt.
-                let worker_num = match get_client_selection(max_num - 1) {
-                    Ok(num) => num,
-                    Err(error) => {
-                        println!("Error: {}", error);
-                        continue
+                let action = match get_action() {
+                    Ok(action) => action,
+                    Err(message) => {
+                        println!("{}", message);
+                        continue;
                     }
                 };
 
-                // Not ideal to block on input here :(
-                let doom = doom_ref.lock().unwrap();
-                let song = match doom.get_song_selection() {
-                    Ok(song) => song,
-                    Err(error) => {
-                        println!("Error: {}", error);
-                        drop(doom);
-                        continue
-                    }
+                match action(&doom) {
+                    Ok(_) => (),
+                    Err(message) => println!("{}", message)
                 };
 
-                match doom.workers.get(worker_num) {
-                    None => println!("Not a valid client number"),
-                    Some(worker_ref) => {
-                        println!("Sending song: {}/{}/{}", song.artist, song.album, song.name);
-                        worker_ref.lock().unwrap().deref_mut().send_song(song);
-                    }
-                }
-
                 drop(doom);
-                thread::sleep(time::Duration::from_millis(1000));
+                thread::sleep(time::Duration::from_millis(100));
             }
         });
     }
