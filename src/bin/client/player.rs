@@ -84,6 +84,16 @@ impl Player {
         self.sink.pause()
     }
 
+    pub fn is_paused(&self) -> bool {
+        self.sink.is_paused()
+    }
+
+    pub fn get_queue(&self) -> LinkedList<Song> {
+        let mut ret = self.playing_songs.clone();
+        ret.append(&mut self.queued_songs.clone());
+        ret
+    }
+
     pub fn resume(&mut self) {
         self.sink.play()
     }

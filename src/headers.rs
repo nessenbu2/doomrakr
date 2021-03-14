@@ -13,6 +13,8 @@ pub const SERVER_PAUSE: u8 = 8;
 pub const CLIENT_SONG_CACHED: u8 = 9;
 pub const CLIENT_RESUMED: u8 = 10;
 pub const CLIENT_PAUSED: u8 = 11;
+pub const SERVER_GET_STATUS: u8 = 12;
+pub const CLIENT_STATUS: u8 = 13;
 
 pub struct Header {
     pub action: u8,

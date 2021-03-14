@@ -1,5 +1,6 @@
 use crate::con::{Connection, ConnectionSend, ConnectionGet};
 
+#[derive(Clone)]
 pub struct Song {
     pub artist: String,
     pub album: String,

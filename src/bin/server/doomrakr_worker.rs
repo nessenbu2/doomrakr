@@ -183,6 +183,10 @@ impl DoomrakrWorker {
         }
     }
 
+    pub fn get_status(&mut self) -> Result<usize, String> {
+        Ok(0)
+    }
+
     pub fn send_song(&mut self, song: Song) -> Result<usize, String> {
         let header = Header::new(headers::SERVER_INIT_STREAM, self.id.clone());
         let sent = header.send(&mut self.con)?;

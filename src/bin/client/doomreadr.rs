@@ -27,6 +27,7 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
             headers::SERVER_STREAM_FINISHED => finish_stream(doom, &header)?,
             headers::SERVER_RESUME => resume_play(doom, &header)?,
             headers::SERVER_PAUSE => pause_play(doom, &header)?,
+            headers::SERVER_GET_STATUS => get_status(doom, &header)?,
             // TODO: skip maybe? idk
             _ => println!("Didn't understand action: {}", header.action)
         }
@@ -108,6 +109,23 @@ fn pause_play(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     let response_header = Header::new(headers::CLIENT_PAUSED, doom.client_id.clone());
 
     response_header.send(&mut doom.con)?;
+    Ok(())
+}
+
+fn get_status(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
+    let is_paused = doom.player.is_paused();
+    let queue = doom.player.get_queue();
+    
+    // Send paused status and then the number of songs in the queue
+    doom.con.send(&usize::to_be_bytes(is_paused as usize))?;
+    doom.con.send(&usize::to_be_bytes(queue.len()))?;
+
+    let response_header = Header::new(headers::CLIENT_STATUS, doom.client_id.clone());
+    response_header.send(&mut doom.con)?;
+
+    for song in &queue {
+        song.send(&mut doom.con)?;
+    }
     Ok(())
 }
 

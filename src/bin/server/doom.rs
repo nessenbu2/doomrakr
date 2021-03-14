@@ -45,6 +45,8 @@ fn get_action() -> Result<fn(&Doomrakr) -> Result<usize, String>, String> {
         Ok(resume)
     } else if action == "pause" {
         Ok(pause)
+    } else if action == "status" {
+        Ok(status)
     } else if action == "help" {
         Ok(print_command_info)
     } else  {
@@ -74,10 +76,11 @@ fn add_to_queue(doom: &Doomrakr) -> Result<usize, String> {
 }
 
 fn resume(doom: &Doomrakr) -> Result<usize, String> {
+    // TODO: dedupe some of this code
     doom.print_client_info();
     let max_num = doom.workers.len();
-
     let worker_num = get_client_selection(max_num - 1)?;
+
     match doom.workers.get(worker_num) {
         None => Err("Not a valid client number".to_string()),
         Some(worker_ref) => {
@@ -91,8 +94,8 @@ fn resume(doom: &Doomrakr) -> Result<usize, String> {
 fn pause(doom: &Doomrakr) -> Result<usize, String> {
     doom.print_client_info();
     let max_num = doom.workers.len();
-
     let worker_num = get_client_selection(max_num - 1)?;
+
     match doom.workers.get(worker_num) {
         None => Err("Not a valid client number".to_string()),
         Some(worker_ref) => {
@@ -101,6 +104,22 @@ fn pause(doom: &Doomrakr) -> Result<usize, String> {
             worker.deref_mut().pause()
         }
     }
+}
+
+fn status(doom: &Doomrakr) -> Result<usize, String> {
+    doom.print_client_info();
+    let max_num = doom.workers.len();
+    let worker_num = get_client_selection(max_num - 1)?;
+
+    let current_queue = match doom.workers.get(worker_num) {
+        None => Err("Not a valid client number".to_string()),
+        Some(worker_ref) => {
+            let mut worker = worker_ref.lock().unwrap();
+            println!("Status of: {}", worker.client_id);
+            worker.deref_mut().get_status()
+        }
+    };
+    Ok(9)
 }
 
 pub struct Doomrakr  {
