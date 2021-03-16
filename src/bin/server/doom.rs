@@ -111,15 +111,25 @@ fn status(doom: &Doomrakr) -> Result<usize, String> {
     let max_num = doom.workers.len();
     let worker_num = get_client_selection(max_num - 1)?;
 
-    let current_queue = match doom.workers.get(worker_num) {
-        None => Err("Not a valid client number".to_string()),
+    let status = match doom.workers.get(worker_num) {
+        None => return Err("Not a valid client number".to_string()),
         Some(worker_ref) => {
             let mut worker = worker_ref.lock().unwrap();
-            println!("Status of: {}", worker.client_id);
-            worker.deref_mut().get_status()
+            println!("Status for client: {}", worker.client_id);
+            worker.deref_mut().get_status()?
         }
     };
-    Ok(9)
+
+    println!("Is Paused: {}. Current queue len: {}", status.is_paused, status.current_queue.len());
+    println!("");
+    println!("Current queue:");
+    println!("");
+    for song in status.current_queue.iter() {
+        println!("{}", song.name);
+    }
+    println!("");
+
+    Ok(status.current_queue.len())
 }
 
 pub struct Doomrakr  {

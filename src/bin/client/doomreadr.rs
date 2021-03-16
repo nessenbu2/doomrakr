@@ -115,13 +115,13 @@ fn pause_play(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
 fn get_status(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     let is_paused = doom.player.is_paused();
     let queue = doom.player.get_queue();
-    
-    // Send paused status and then the number of songs in the queue
-    doom.con.send(&usize::to_be_bytes(is_paused as usize))?;
-    doom.con.send(&usize::to_be_bytes(queue.len()))?;
 
     let response_header = Header::new(headers::CLIENT_STATUS, doom.client_id.clone());
     response_header.send(&mut doom.con)?;
+
+    // Send paused status and then the number of songs in the queue
+    doom.con.send(&usize::to_be_bytes(is_paused as usize))?;
+    doom.con.send(&usize::to_be_bytes(queue.len()))?;
 
     for song in &queue {
         song.send(&mut doom.con)?;
