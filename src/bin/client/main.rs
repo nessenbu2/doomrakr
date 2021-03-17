@@ -1,7 +1,7 @@
 mod doomreadr;
 mod player;
 
-use std::net::{TcpStream};
+use std::net::TcpStream;
 use std::time::Duration;
 
 use doomrakr::con::Connection;

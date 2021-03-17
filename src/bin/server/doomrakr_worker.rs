@@ -143,23 +143,17 @@ fn print_and_close(doom: &mut DoomrakrWorker, message: String) {
 }
 
 impl DoomrakrWorker {
-    pub fn init_connection(mut con: Connection) -> Arc<Mutex<DoomrakrWorker>> {
-        let header = Header::get(&mut con).unwrap();
-        if header.action != headers::CLIENT_HELLO {
-            println!("Got header but it's not a hello? Let's see what happens. action: {} id: {}",
-                     header.action, header.id);
-        }
-
+    pub fn init_connection(mut con: Connection, header: Header) -> Arc<Mutex<DoomrakrWorker>>  {
         let ack_header = Header::new(headers::SERVER_ACK, header.id.clone());
         ack_header.send(&mut con).unwrap();
 
         let doom_mutex = Arc::new(Mutex::new(DoomrakrWorker{
-                                client_id: header.id,
-                                id: String::from("MASTER"),
-                                con: con,
-                                state: State::Idle,
-                                song: Option::None,
-                                file: Option::None}));
+            client_id: header.id,
+            id: String::from("MASTER"),
+            con: con,
+            state: State::Idle,
+            song: Option::None,
+            file: Option::None}));
 
         start_heartbeating(doom_mutex.clone());
         doom_mutex

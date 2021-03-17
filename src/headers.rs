@@ -15,6 +15,8 @@ pub const CLIENT_RESUMED: u8 = 10;
 pub const CLIENT_PAUSED: u8 = 11;
 pub const SERVER_GET_STATUS: u8 = 12;
 pub const CLIENT_STATUS: u8 = 13;
+pub const CLIENT_GET_LIBRARY: u8 = 13;
+pub const CLIENT_GET_QUEUE_INFO: u8 = 14;
 
 pub struct Header {
     pub action: u8,
@@ -43,6 +45,7 @@ impl ConnectionGet for Header {
     fn get(con: &mut Connection) -> Result<Self, String> {
         let mut action = [0 as u8; 1];
         let mut length = [0 as u8; 8];
+
         // TODO check that the right amount of bytes were read
         con.get(&mut action)?;
         con.get(&mut length)?;
