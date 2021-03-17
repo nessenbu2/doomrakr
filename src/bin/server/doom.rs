@@ -190,6 +190,11 @@ impl Doomrakr {
         self.workers.push(worker.clone())
     }
 
+    pub fn dump_dir(&self) {
+        let json = self.dir.dump_to_json_string();
+        println!("{}", json);
+    }
+
     pub fn init(&mut self) {
         self.dir.fetch_doom("/home/nick/music".to_string())
     }

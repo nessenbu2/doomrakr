@@ -42,7 +42,7 @@ fn main() {
                         let worker = DoomrakrWorker::init_connection(con, header);
                         doom_ref.lock().unwrap().handle_new_con(worker);
                     } else if header.action == headers::CLIENT_GET_LIBRARY {
-                        println!("get lib");
+                        doom_ref.lock().unwrap().dump_dir();
                     } else if header.action == headers::CLIENT_GET_QUEUE_INFO {
                         println!("get queue info");
                     } else {
