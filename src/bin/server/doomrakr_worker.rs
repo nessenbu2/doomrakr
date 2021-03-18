@@ -27,7 +27,6 @@ pub struct DoomrakrWorker {
     file: Option<File> // also not valid if state is not Streaming
 }
 
-// TODO: maybe this shouldn't all be public
 pub struct ClientStatus {
     pub is_paused: bool,
     pub current_queue: Vec<Song>

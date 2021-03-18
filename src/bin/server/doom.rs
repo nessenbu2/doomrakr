@@ -3,6 +3,7 @@ use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 use std::io::stdin;
 
+use json::{object, JsonValue};
 use doomrakr::song::Song;
 
 use crate::fs_walker::Directory;
@@ -179,7 +180,7 @@ impl Doomrakr {
                 };
 
                 drop(doom);
-                thread::sleep(time::Duration::from_millis(100));
+                thread::sleep(time::Duration::from_millis(5000));
             }
         });
     }
@@ -193,6 +194,29 @@ impl Doomrakr {
     pub fn dump_dir(&self) {
         let json = self.dir.dump_to_json_string();
         println!("{}", json);
+    }
+
+    // TODO: client_id instead of client_num
+    pub fn dump_status(&self, client_num: usize) {
+        let state = match self.workers.get(client_num) {
+            Some(worker_ref) => {
+                let mut worker = worker_ref.lock().unwrap();
+                worker.deref_mut().get_status().unwrap()
+            }
+            None => {
+                println!("No current worker");
+                return;
+            }
+        };
+        let mut data = object!{};
+        data["client_num"] = JsonValue::from(client_num);
+        data["is_paused"] = JsonValue::from(state.is_paused);
+        let song_names = state.current_queue.clone().iter()
+            .map(|s| s.name.clone())
+            .collect::<Vec<String>>();
+        data["current_queue"] = JsonValue::from(song_names);
+
+        println!("{}", json::stringify(data));
     }
 
     pub fn init(&mut self) {

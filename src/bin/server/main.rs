@@ -44,7 +44,7 @@ fn main() {
                     } else if header.action == headers::CLIENT_GET_LIBRARY {
                         doom_ref.lock().unwrap().dump_dir();
                     } else if header.action == headers::CLIENT_GET_QUEUE_INFO {
-                        println!("get queue info");
+                        doom_ref.lock().unwrap().dump_status(0);
                     } else {
                         println!("Unable to understand incoming request. dropped");
                     }
