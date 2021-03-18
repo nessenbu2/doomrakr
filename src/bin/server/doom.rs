@@ -170,12 +170,16 @@ impl Doomrakr {
                     Ok(action) => action,
                     Err(message) => {
                         println!("{}", message);
+                        drop(doom);
+                        thread::sleep(time::Duration::from_millis(5000));
                         continue;
                     }
                 };
 
                 match action(&doom) {
                     Ok(_) => (),
+                    drop(doom);
+                    thread::sleep(time::Duration::from_millis(5000));
                     Err(message) => println!("{}", message)
                 };
 
