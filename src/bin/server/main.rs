@@ -31,7 +31,7 @@ fn main() {
                     println!("New connection: {}", socket.peer_addr().unwrap());
                     let mut con = Connection::new(socket);
                     let header = match Header::get(&mut con) {
-                        Ok(con) => con,
+                        Ok(header) => header,
                         Err(msg) => {
                             println!("{}", msg);
                             continue;
@@ -45,6 +45,8 @@ fn main() {
                         doom_ref.lock().unwrap().dump_dir();
                     } else if header.action == headers::CLIENT_GET_QUEUE_INFO {
                         doom_ref.lock().unwrap().dump_status(0);
+                    } else if header.action == headers::DEBUG_HELLO {
+                        println!("Got a debug msg: {}", header.id);
                     } else {
                         println!("Unable to understand incoming request. dropped");
                     }

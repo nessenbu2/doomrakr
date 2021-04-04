@@ -9,6 +9,12 @@ fn main() {
     let stream = TcpStream::connect("localhost:6142").unwrap();
     let mut con = Connection::new(stream);
 
+    let header = Header::new(headers::DEBUG_HELLO, "DEBUG TEST BABY".to_string());
+    header.send(&mut con).unwrap();
+    thread::sleep(time::Duration::from_millis(1000));
+
+    let stream = TcpStream::connect("localhost:6142").unwrap();
+    let mut con = Connection::new(stream);
     let header = Header::new(headers::CLIENT_GET_LIBRARY, "abce".to_string());
     header.send(&mut con).unwrap();
 
