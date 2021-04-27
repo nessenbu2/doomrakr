@@ -3,6 +3,7 @@ use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 use std::io::stdin;
 
+use json::{object, JsonValue};
 use doomrakr::song::Song;
 
 use crate::fs_walker::Directory;
@@ -111,15 +112,25 @@ fn status(doom: &Doomrakr) -> Result<usize, String> {
     let max_num = doom.workers.len();
     let worker_num = get_client_selection(max_num - 1)?;
 
-    let current_queue = match doom.workers.get(worker_num) {
-        None => Err("Not a valid client number".to_string()),
+    let status = match doom.workers.get(worker_num) {
+        None => return Err("Not a valid client number".to_string()),
         Some(worker_ref) => {
             let mut worker = worker_ref.lock().unwrap();
-            println!("Status of: {}", worker.client_id);
-            worker.deref_mut().get_status()
+            println!("Status for client: {}", worker.client_id);
+            worker.deref_mut().get_status()?
         }
     };
-    Ok(9)
+
+    println!("Is Paused: {}. Current queue len: {}", status.is_paused, status.current_queue.len());
+    println!("");
+    println!("Current queue:");
+    println!("");
+    for song in status.current_queue.iter() {
+        println!("{}", song.name);
+    }
+    println!("");
+
+    Ok(status.current_queue.len())
 }
 
 pub struct Doomrakr  {
@@ -159,6 +170,8 @@ impl Doomrakr {
                     Ok(action) => action,
                     Err(message) => {
                         println!("{}", message);
+                        drop(doom);
+                        thread::sleep(time::Duration::from_millis(5000));
                         continue;
                     }
                 };
@@ -169,7 +182,7 @@ impl Doomrakr {
                 };
 
                 drop(doom);
-                thread::sleep(time::Duration::from_millis(100));
+                thread::sleep(time::Duration::from_millis(5000));
             }
         });
     }
@@ -178,6 +191,34 @@ impl Doomrakr {
     // just a Connection object
     pub fn handle_new_con(&mut self, worker: Arc<Mutex<DoomrakrWorker>>) {
         self.workers.push(worker.clone())
+    }
+
+    pub fn dump_dir(&self) {
+        let json = self.dir.dump_to_json_string();
+        println!("{}", json);
+    }
+
+    // TODO: client_id instead of client_num
+    pub fn dump_status(&self, client_num: usize) {
+        let state = match self.workers.get(client_num) {
+            Some(worker_ref) => {
+                let mut worker = worker_ref.lock().unwrap();
+                worker.deref_mut().get_status().unwrap()
+            }
+            None => {
+                println!("No current worker");
+                return;
+            }
+        };
+        let mut data = object!{};
+        data["client_num"] = JsonValue::from(client_num);
+        data["is_paused"] = JsonValue::from(state.is_paused);
+        let song_names = state.current_queue.clone().iter()
+            .map(|s| s.name.clone())
+            .collect::<Vec<String>>();
+        data["current_queue"] = JsonValue::from(song_names);
+
+        println!("{}", json::stringify(data));
     }
 
     pub fn init(&mut self) {

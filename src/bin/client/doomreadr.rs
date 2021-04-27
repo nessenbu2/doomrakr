@@ -28,7 +28,7 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
             headers::SERVER_RESUME => resume_play(doom, &header)?,
             headers::SERVER_PAUSE => pause_play(doom, &header)?,
             headers::SERVER_GET_STATUS => get_status(doom, &header)?,
-            _ => println!("Didn't understand action: {}", header.action)
+            _ => return Err(format!("Didn't understand action. Reconnecting. Action: {}", header.action))
         }
     } else {
         // NOOP
@@ -114,13 +114,13 @@ fn pause_play(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
 fn get_status(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     let is_paused = doom.player.is_paused();
     let queue = doom.player.get_queue();
-    
-    // Send paused status and then the number of songs in the queue
-    doom.con.send(&usize::to_be_bytes(is_paused as usize))?;
-    doom.con.send(&usize::to_be_bytes(queue.len()))?;
 
     let response_header = Header::new(headers::CLIENT_STATUS, doom.client_id.clone());
     response_header.send(&mut doom.con)?;
+
+    // Send paused status and then the number of songs in the queue
+    doom.con.send(&usize::to_be_bytes(is_paused as usize))?;
+    doom.con.send(&usize::to_be_bytes(queue.len()))?;
 
     for song in &queue {
         song.send(&mut doom.con)?;
@@ -135,11 +135,19 @@ impl Doomreadr {
         loop {
             match check_for_commands(self) {
                 Ok(_) => (),
-                Err(message) => println!("{}", message)
+                Err(message) => {
+                    // Just return on all errors. We'll reconnect anyway
+                    println!("{}", message);
+                    return;
+                }
             }
             match maybe_heartbeat(self) {
                 Ok(_) => (),
-                Err(message) => println!("{}", message)
+                Err(message) => {
+                    // Just return on all errors. We'll reconnect anyway
+                    println!("{}", message);
+                    return;
+                }
             }
             self.player.maybe_enquque_song();
         }

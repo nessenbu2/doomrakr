@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 chrono = "0.4.x"
 rodio = "0.13.0"
+json = "0.12.4"

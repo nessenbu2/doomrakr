@@ -3,7 +3,10 @@ mod doom;
 mod doomrakr_worker;
 mod fs_walker;
 
-use doomrakr::con::Connection;
+use doomrakr::headers;
+use doomrakr::headers::Header;
+use doomrakr::con::{Connection, ConnectionGet};
+
 use doom::Doomrakr;
 use doomrakr_worker::DoomrakrWorker;
 
@@ -26,8 +29,27 @@ fn main() {
             match stream {
                 Ok(socket) => {
                     println!("New connection: {}", socket.peer_addr().unwrap());
-                    doom_ref.lock().unwrap().handle_new_con(
-                        DoomrakrWorker::init_connection(Connection::new(socket)));
+                    let mut con = Connection::new(socket);
+                    let header = match Header::get(&mut con) {
+                        Ok(header) => header,
+                        Err(msg) => {
+                            println!("{}", msg);
+                            continue;
+                        }
+                    };
+
+                    if header.action == headers::CLIENT_HELLO {
+                        let worker = DoomrakrWorker::init_connection(con, header);
+                        doom_ref.lock().unwrap().handle_new_con(worker);
+                    } else if header.action == headers::CLIENT_GET_LIBRARY {
+                        doom_ref.lock().unwrap().dump_dir();
+                    } else if header.action == headers::CLIENT_GET_QUEUE_INFO {
+                        doom_ref.lock().unwrap().dump_status(0);
+                    } else if header.action == headers::DEBUG_HELLO {
+                        println!("Got a debug msg: {}", header.id);
+                    } else {
+                        println!("Unable to understand incoming request. dropped");
+                    }
                 }
                 Err(e) => {
                     println!("Error: {}", e);

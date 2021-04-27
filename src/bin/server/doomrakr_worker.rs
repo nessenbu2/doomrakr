@@ -27,6 +27,11 @@ pub struct DoomrakrWorker {
     file: Option<File> // also not valid if state is not Streaming
 }
 
+pub struct ClientStatus {
+    pub is_paused: bool,
+    pub current_queue: Vec<Song>
+}
+
 fn doom_main(doom_ref: Arc<Mutex<DoomrakrWorker>>) {
     loop {
         let mut doom = doom_ref.lock().unwrap();
@@ -137,23 +142,17 @@ fn print_and_close(doom: &mut DoomrakrWorker, message: String) {
 }
 
 impl DoomrakrWorker {
-    pub fn init_connection(mut con: Connection) -> Arc<Mutex<DoomrakrWorker>> {
-        let header = Header::get(&mut con).unwrap();
-        if header.action != headers::CLIENT_HELLO {
-            println!("Got header but it's not a hello? Let's see what happens. action: {} id: {}",
-                     header.action, header.id);
-        }
-
+    pub fn init_connection(mut con: Connection, header: Header) -> Arc<Mutex<DoomrakrWorker>>  {
         let ack_header = Header::new(headers::SERVER_ACK, header.id.clone());
         ack_header.send(&mut con).unwrap();
 
         let doom_mutex = Arc::new(Mutex::new(DoomrakrWorker{
-                                client_id: header.id,
-                                id: String::from("MASTER"),
-                                con: con,
-                                state: State::Idle,
-                                song: Option::None,
-                                file: Option::None}));
+            client_id: header.id,
+            id: String::from("MASTER"),
+            con: con,
+            state: State::Idle,
+            song: Option::None,
+            file: Option::None}));
 
         start_heartbeating(doom_mutex.clone());
         doom_mutex
@@ -183,8 +182,37 @@ impl DoomrakrWorker {
         }
     }
 
-    pub fn get_status(&mut self) -> Result<usize, String> {
-        Ok(0)
+    pub fn get_status(&mut self) -> Result<ClientStatus, String> {
+        let header = Header::new(headers::SERVER_GET_STATUS, self.id.clone());
+        header.send(&mut self.con)?;
+
+        let resp = Header::get(&mut self.con)?;
+
+        if resp.action != headers::CLIENT_STATUS {
+            return Err(format!("Didn't get expected response. Got: {}", resp.action));
+        }
+
+        // First read 2 usize that represent paused and number of songs
+        let mut buf = [0 as u8; 8];
+        // Read if is paused
+        self.con.get(&mut buf)?;
+        let is_paused = usize::from_be_bytes(buf);
+        let is_paused = is_paused != 0;
+
+        // Read number of songs
+        self.con.get(&mut buf)?;
+        let queue_len = usize::from_be_bytes(buf);
+
+        let mut queue = Vec::new();
+        for _ in 0..queue_len {
+            let song = Song::get(&mut self.con)?;
+            queue.push(song);
+        }
+
+        Ok(ClientStatus {
+            is_paused: is_paused,
+            current_queue: queue
+        })
     }
 
     pub fn send_song(&mut self, song: Song) -> Result<usize, String> {

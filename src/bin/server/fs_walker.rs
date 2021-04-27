@@ -2,6 +2,8 @@ use std::fs;
 use std::collections::HashMap;
 use std::vec::Vec;
 
+use json::{object, JsonValue};
+
 use doomrakr::song::Song;
 
 pub struct Album {
@@ -71,6 +73,21 @@ impl Directory {
         self.artists.get(artist)
     }
 
+    pub fn dump_to_json_string(&self) -> String {
+        let mut data = object!{};
+
+        for (_name, artist) in &self.artists {
+            for album in &artist.albums {
+                let song_vec = album.songs.clone().iter()
+                    .map(|s| s.name.clone())
+                    .collect::<Vec<String>>();
+                data[artist.name.clone()][album.name.clone()] = JsonValue::from(song_vec);
+            }
+        }
+
+        json::stringify(data)
+    }
+
     // Since I'm bad at rust, files are going to be stored at
     // the given base directory following the pattern 'ARTIST/ALBUM/Song.format'.
     pub fn fetch_doom(&mut self, base_dir:String) -> () {
@@ -81,7 +98,6 @@ impl Directory {
         // TODO: figure out how to make this shit not all PathBuf types.
         //       It shouldn't be too hard to just make these strings.
         //
-        // ALSO, clean up the variable names in here. Christ nick
         for artist in artists {
             let artist = artist.unwrap();
             let mut _artist = Artist::new(artist.file_name().into_string().unwrap());
