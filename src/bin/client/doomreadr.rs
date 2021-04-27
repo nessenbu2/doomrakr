@@ -29,7 +29,7 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
             headers::SERVER_PAUSE => pause_play(doom, &header)?,
             headers::SERVER_GET_STATUS => get_status(doom, &header)?,
             // TODO: skip maybe? idk
-            _ => println!("Didn't understand action: {}", header.action)
+            _ => return Err(format!("Didn't understand action. Reconnecting. Action: {}", header.action))
         }
     } else {
         // NOOP
@@ -136,11 +136,19 @@ impl Doomreadr {
         loop {
             match check_for_commands(self) {
                 Ok(_) => (),
-                Err(message) => println!("{}", message)
+                Err(message) => {
+                    // Just return on all errors. We'll reconnect anyway
+                    println!("{}", message);
+                    return;
+                }
             }
             match maybe_heartbeat(self) {
                 Ok(_) => (),
-                Err(message) => println!("{}", message)
+                Err(message) => {
+                    // Just return on all errors. We'll reconnect anyway
+                    println!("{}", message);
+                    return;
+                }
             }
             self.player.maybe_enquque_song();
         }
