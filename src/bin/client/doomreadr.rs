@@ -28,7 +28,6 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
             headers::SERVER_RESUME => resume_play(doom, &header)?,
             headers::SERVER_PAUSE => pause_play(doom, &header)?,
             headers::SERVER_GET_STATUS => get_status(doom, &header)?,
-            // TODO: skip maybe? idk
             _ => return Err(format!("Didn't understand action. Reconnecting. Action: {}", header.action))
         }
     } else {
