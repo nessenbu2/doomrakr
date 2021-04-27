@@ -4,6 +4,7 @@ mod player;
 use std::{thread, time};
 use std::net::TcpStream;
 use std::time::Duration;
+use std::env;
 
 use doomrakr::con::Connection;
 
@@ -17,19 +18,48 @@ fn handle(stream: TcpStream, client_id: &mut String) {
 
     let mut doom = Doomreadr::new(client_id.trim().to_string(), Connection::new(stream));
     doom.run();
+
+    println!("Connection ended. Sleeping...");
+    thread::sleep(time::Duration::from_millis(5000));
 }
 
 fn main() {
-    let mut client_id = String::new();
-    // May make sense to let the conneciton handle this
-    std::io::stdin().read_line(&mut client_id).unwrap();
+
+    if env::args().count() < 3 {
+        println!("usage: ./client <client_id> <server_host_address>");
+        return;
+    } else if env::args().count() > 3 {
+        println!("usage: ./client <client_id> <server_host_address>");
+        println!("You've supplied more than 2 arguments, let's see how this goes");
+    }
+
+    let mut args = env::args();
+    args.next(); // Skip the binary file name
+    let mut client_id = match args.next() {
+        Some(val) => val,
+        None => return
+    };
+
+    let hostname = match args.next() {
+        Some(val) => val,
+        None => return
+    };
 
     loop {
-        match TcpStream::connect("localhost:6142") {
+        match TcpStream::connect(format!("{}:6142", hostname)) {
             Ok(stream) => handle(stream, &mut client_id),
-            Err(err) => println!("{}", err)
+            Err(err) => {
+                // Should consider having a retryable class or errors but the only one I care about
+                // here seems to be ConnectionRefused. Will revisit if that's not correct.
+                if err.kind() == std::io::ErrorKind::ConnectionRefused {
+                    println!("Connection Refused. The server is probably not active");
+                    println!("Will retry after sleeping");
+                    thread::sleep(time::Duration::from_millis(5000));
+                } else {
+                    println!("Got an error that's probably not retryable: {:?}", err);
+                    return;
+                }
+            }
         };
-        println!("Connection ended. Sleeping...");
-        thread::sleep(time::Duration::from_millis(5000));
     }
 }
