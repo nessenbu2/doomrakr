@@ -56,7 +56,7 @@ fn get_action() -> Result<fn(&Doomrakr) -> Result<usize, String>, String> {
 }
 
 fn print_command_info(_doom: &Doomrakr) -> Result<usize, String> {
-    println!("TODO lol");
+    println!("commands: add, resume, pause, status, help");
     Ok(0)
 }
 
