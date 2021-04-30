@@ -5,6 +5,7 @@ use std::{thread, time};
 use std::option::Option;
 use std::fs::File;
 use std::mem;
+use std::convert::TryInto;
 
 use doomrakr::headers;
 use doomrakr::headers::Header;
@@ -78,6 +79,7 @@ fn send_chunk(mut doom: &mut DoomrakrWorker) {
     let song = doom.song.as_ref().unwrap();
 
     if chunk_len == 0 {
+        println!("done reading song");
         let fin_header = Header::new(headers::SERVER_STREAM_FINISHED, doom.id.clone());
         match fin_header.send(&mut doom.con) {
             Ok(_) => (),
@@ -112,7 +114,14 @@ fn send_chunk(mut doom: &mut DoomrakrWorker) {
                 return;
             }
         };
-        match doom.con.send(&data) {
+         match doom.con.send(&u64::to_be_bytes(chunk_len.try_into().unwrap())) {
+            Ok(_) => (),
+            Err(message) => {
+                print_and_close(&mut doom, message);
+                return;
+            }
+        };
+        match doom.con.send(&data[..chunk_len]) {
             Ok(_) => (),
             Err(message) => {
                 print_and_close(&mut doom, message);
