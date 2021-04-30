@@ -46,7 +46,7 @@ impl ConnectionSend for Header {
 impl ConnectionGet for Header {
     fn get(con: &mut Connection) -> Result<Self, String> {
         let mut action = [0 as u8; 1];
-        let mut length = [0 as u8; mem::size_of::<usize>()];
+        let mut length = [0 as u8; mem::size_of::<u64>()];
 
         // TODO check that the right amount of bytes were read
         con.get(&mut action)?;

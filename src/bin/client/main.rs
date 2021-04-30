@@ -45,8 +45,10 @@ fn main() {
         None => return
     };
 
+    println!("Connection to {}...", hostname);
+
     loop {
-        match TcpStream::connect(format!("{}:6142", hostname)) {
+        match TcpStream::connect(format!("{}:6242", hostname)) {
             Ok(stream) => handle(stream, &mut client_id),
             Err(err) => {
                 // Should consider having a retryable class or errors but the only one I care about

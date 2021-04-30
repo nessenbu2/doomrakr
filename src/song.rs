@@ -24,7 +24,7 @@ impl Song {
 
 impl ConnectionGet for Song {
     fn get(con: &mut Connection) -> Result<Self, String> where Self: Sized {
-        let mut length = [0 as u8; mem::size_of::<usize>()];
+        let mut length = [0 as u8; mem::size_of::<u64>()];
         // Read lenghts of song names
         con.get(&mut length)?;
         let artist_length = usize::from_be_bytes(length);
