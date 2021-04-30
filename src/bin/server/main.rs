@@ -14,7 +14,7 @@ use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
 
 fn main() {
-    let addr = "127.0.0.1:6142";
+    let addr = "0.0.0.0:6142";
     let listener = TcpListener::bind(addr).unwrap();
 
     println!("listening for connections");

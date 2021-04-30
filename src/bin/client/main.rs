@@ -45,6 +45,8 @@ fn main() {
         None => return
     };
 
+    println!("Connecting to {}:6124...", hostname);
+
     loop {
         match TcpStream::connect(format!("{}:6142", hostname)) {
             Ok(stream) => handle(stream, &mut client_id),

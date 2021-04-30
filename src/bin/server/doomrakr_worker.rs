@@ -4,6 +4,7 @@ use std::ops::DerefMut;
 use std::{thread, time};
 use std::option::Option;
 use std::fs::File;
+use std::mem;
 
 use doomrakr::headers;
 use doomrakr::headers::Header;
@@ -192,16 +193,16 @@ impl DoomrakrWorker {
             return Err(format!("Didn't get expected response. Got: {}", resp.action));
         }
 
-        // First read 2 usize that represent paused and number of songs
-        let mut buf = [0 as u8; 8];
+        // First read 2 u64s that represent paused and number of songs
+        let mut buf = [0 as u8; mem::size_of::<u64>()];
         // Read if is paused
         self.con.get(&mut buf)?;
-        let is_paused = usize::from_be_bytes(buf);
+        let is_paused = u64::from_be_bytes(buf);
         let is_paused = is_paused != 0;
 
         // Read number of songs
         self.con.get(&mut buf)?;
-        let queue_len = usize::from_be_bytes(buf);
+        let queue_len = u64::from_be_bytes(buf);
 
         let mut queue = Vec::new();
         for _ in 0..queue_len {
