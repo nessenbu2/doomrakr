@@ -1,4 +1,5 @@
 use crate::con::{Connection, ConnectionSend, ConnectionGet};
+use std::mem;
 
 #[derive(Clone)]
 pub struct Song {
@@ -23,7 +24,7 @@ impl Song {
 
 impl ConnectionGet for Song {
     fn get(con: &mut Connection) -> Result<Self, String> where Self: Sized {
-        let mut length = [0 as u8; 8];
+        let mut length = [0 as u8; mem::size_of::<usize>()];
         // Read lenghts of song names
         con.get(&mut length)?;
         let artist_length = usize::from_be_bytes(length);

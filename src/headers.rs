@@ -1,4 +1,5 @@
 use crate::con::{Connection, ConnectionSend, ConnectionGet};
+use std::mem;
 
 // ACTIONS
 pub const CLIENT_HELLO: u8 = 0;
@@ -45,7 +46,7 @@ impl ConnectionSend for Header {
 impl ConnectionGet for Header {
     fn get(con: &mut Connection) -> Result<Self, String> {
         let mut action = [0 as u8; 1];
-        let mut length = [0 as u8; 8];
+        let mut length = [0 as u8; mem::size_of::<usize>()];
 
         // TODO check that the right amount of bytes were read
         con.get(&mut action)?;

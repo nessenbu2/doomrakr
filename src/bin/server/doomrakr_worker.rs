@@ -4,6 +4,7 @@ use std::ops::DerefMut;
 use std::{thread, time};
 use std::option::Option;
 use std::fs::File;
+use std::mem;
 
 use doomrakr::headers;
 use doomrakr::headers::Header;
@@ -193,7 +194,7 @@ impl DoomrakrWorker {
         }
 
         // First read 2 usize that represent paused and number of songs
-        let mut buf = [0 as u8; 8];
+        let mut buf = [0 as u8; mem::size_of::<usize>()];
         // Read if is paused
         self.con.get(&mut buf)?;
         let is_paused = usize::from_be_bytes(buf);
