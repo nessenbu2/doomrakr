@@ -43,6 +43,13 @@ impl Connection {
         }
     }
 
+    pub fn get_exact(&mut self, buf: &mut [u8]) -> Result<usize, String> {
+        match self.stream.read_exact(buf) {
+            Ok(_) => Ok(0),
+            Err(error) => Err(error.to_string())
+        }
+    }
+
     pub fn has_data(&self) -> bool {
         let mut peek = [0 as u8; 1];
         match self.stream.peek(&mut peek) {

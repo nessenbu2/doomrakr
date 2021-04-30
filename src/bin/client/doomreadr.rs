@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 use std::convert::TryInto;
+use std::mem;
 
 use doomrakr::headers;
 use doomrakr::headers::Header;
@@ -20,7 +21,7 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
     if doom.con.has_data() {
         let header = Header::get(&mut doom.con)?;
 
-        println!("got header. action {}", header.action);
+        println!("got header. action: {}, id: {}", header.action, header.id);
         match header.action {
             headers::SERVER_ACK => recv_ack(doom, &header),
             headers::SERVER_INIT_STREAM => init_stream(doom, &header)?,
@@ -31,6 +32,7 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
             headers::SERVER_GET_STATUS => get_status(doom, &header)?,
             _ => return Err(format!("Didn't understand action. Reconnecting. Action: {}", header.action))
         }
+        doom.last_hb_time = SystemTime::now();
     } else {
         // NOOP
     }
@@ -50,9 +52,7 @@ fn recv_ack(_doom: &mut Doomreadr, _header: &Header) {
     // NOOP
 }
 
-fn init_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
-    println!("got a request to init a stream. id: {}", header.id);
-
+fn init_stream(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     let song = Song::get(&mut doom.con)?;
 
     println!("Got request to stream a song");
@@ -72,10 +72,15 @@ fn init_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
 
 fn recv_chunk(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
 
-    // TODO: send and recv a length of the chunk
-    let mut data = [0 as u8; 4096];
     let song = Song::get(&mut doom.con)?;
-    doom.con.get(&mut data)?;
+
+    let mut length = [0 as u8; mem::size_of::<u64>()];
+    doom.con.get(&mut length)?;
+
+    let length = u64::from_be_bytes(length);
+    let mut data = vec![0 as u8; length.try_into().unwrap()];
+
+    doom.con.get_exact(&mut data)?;
 
     Player::add_chunk(&song, &mut data);
 

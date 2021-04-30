@@ -131,7 +131,7 @@ impl Player {
         }
     }
 
-    pub fn add_chunk(song: &Song, data: &mut [u8; 4096]) {
+    pub fn add_chunk(song: &Song, data: &mut [u8]) {
         let path = get_for_stream(song);
         match OpenOptions::new()
             .append(true)
