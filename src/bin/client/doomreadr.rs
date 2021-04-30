@@ -1,4 +1,5 @@
 use std::time::SystemTime;
+use std::convert::TryInto;
 
 use doomrakr::headers;
 use doomrakr::headers::Header;
@@ -119,8 +120,8 @@ fn get_status(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     response_header.send(&mut doom.con)?;
 
     // Send paused status and then the number of songs in the queue
-    doom.con.send(&usize::to_be_bytes(is_paused as usize))?;
-    doom.con.send(&usize::to_be_bytes(queue.len()))?;
+    doom.con.send(&u64::to_be_bytes(is_paused as u64))?;
+    doom.con.send(&u64::to_be_bytes(queue.len().try_into().unwrap()))?;
 
     for song in &queue {
         song.send(&mut doom.con)?;

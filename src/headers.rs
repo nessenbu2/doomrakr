@@ -1,5 +1,6 @@
 use crate::con::{Connection, ConnectionSend, ConnectionGet};
 use std::mem;
+use std::convert::TryInto;
 
 // ACTIONS
 pub const CLIENT_HELLO: u8 = 0;
@@ -31,7 +32,7 @@ impl ConnectionSend for Header {
             Ok(bytes) => bytes,
             Err(error) => return Err(error)
         };
-        let written = written + match con.send(&usize::to_be_bytes(self.id.len())) {
+        let written = written + match con.send(&u64::to_be_bytes(self.id.len().try_into().unwrap())) {
             Ok(bytes) => bytes,
             Err(error) => return Err(error)
         };
@@ -51,8 +52,8 @@ impl ConnectionGet for Header {
         // TODO check that the right amount of bytes were read
         con.get(&mut action)?;
         con.get(&mut length)?;
-        let length = usize::from_be_bytes(length);
-        let mut id_bytes = vec![0u8; length];
+        let length = u64::from_be_bytes(length);
+        let mut id_bytes = vec![0u8; length.try_into().unwrap()];
         con.get(&mut id_bytes)?;
         let id = match String::from_utf8(id_bytes) {
             Ok(id) => id,
