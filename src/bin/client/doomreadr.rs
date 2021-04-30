@@ -32,6 +32,7 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
             headers::SERVER_GET_STATUS => get_status(doom, &header)?,
             _ => return Err(format!("Didn't understand action. Reconnecting. Action: {}", header.action))
         }
+        doom.last_hb_time = SystemTime::now();
     } else {
         // NOOP
     }
@@ -51,7 +52,7 @@ fn recv_ack(_doom: &mut Doomreadr, _header: &Header) {
     // NOOP
 }
 
-fn init_stream(doom: &mut Doomreadr, header: &Header) -> Result<(), String> {
+fn init_stream(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     let song = Song::get(&mut doom.con)?;
 
     println!("Got request to stream a song");

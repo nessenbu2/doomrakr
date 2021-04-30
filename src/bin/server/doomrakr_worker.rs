@@ -132,7 +132,8 @@ fn send_chunk(mut doom: &mut DoomrakrWorker) {
 
     let header = Header::get(&mut doom.con).unwrap(); // TODO: return for this should be a result
     if header.action != headers::CLIENT_ACK {
-        print!("got a response, but it wasn't ack. Don't freak out, but it's probably busted");
+        println!("got a response, but it wasn't ack. Don't freak out, but it's probably busted");
+        println!("action: {}, id: {}", header.action, header.id);
     }
 }
 
