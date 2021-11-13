@@ -194,7 +194,7 @@ impl Doomrakr {
     }
 
     pub fn dump_dir(&self) {
-        let json = self.dir.dump_to_json_string();
+        let json = serde_json::to_string(&self.dir).unwrap();
         println!("{}", json);
     }
 

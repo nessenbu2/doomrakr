@@ -1,8 +1,9 @@
 use crate::con::{Connection, ConnectionSend, ConnectionGet};
 use std::mem;
 use std::convert::TryInto;
+use serde::{Serialize, Deserialize};
 
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Song {
     pub artist: String,
     pub album: String,
