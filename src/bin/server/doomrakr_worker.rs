@@ -7,6 +7,8 @@ use std::fs::File;
 use std::mem;
 use std::convert::TryInto;
 
+use json::JsonValue;
+
 use doomrakr::headers;
 use doomrakr::headers::Header;
 use doomrakr::song::Song;
@@ -250,6 +252,10 @@ impl DoomrakrWorker {
 
     pub fn is_closed(&self) -> bool {
         self.state == State::Closed
+    }
+
+    pub fn to_json(&self) -> String {
+        json::stringify("todo")
     }
 
 }

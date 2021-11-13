@@ -221,6 +221,19 @@ impl Doomrakr {
         println!("{}", json::stringify(data));
     }
 
+    pub fn get_all_status(&self) -> String {
+        let dir_json = serde_json::to_string(&self.dir).unwrap();
+        let mut client_json = object!{};
+        for client_ref in self.workers.iter() {
+            let client = client_ref.lock().unwrap();
+            client_json[&client.client_id] = JsonValue::from(client.to_json());
+        }
+        let mut final_json = object!{};
+        final_json["library"] = JsonValue::from(dir_json);
+        final_json["clients"] = JsonValue::from(client_json);
+        json::stringify(final_json)
+    }
+
     pub fn init(&mut self) {
         self.dir.fetch_doom("/home/nick/music".to_string())
     }

@@ -2,6 +2,7 @@
 mod doom;
 mod doomrakr_worker;
 mod fs_walker;
+mod http;
 
 use doomrakr::headers;
 use doomrakr::headers::Header;
@@ -12,8 +13,10 @@ use doomrakr_worker::DoomrakrWorker;
 
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
+use warp::Filter;
 
-fn main() {
+#[tokio::main]
+async fn main() -> () {
     let addr = "0.0.0.0:6142";
     let listener = TcpListener::bind(addr).unwrap();
 
@@ -23,6 +26,14 @@ fn main() {
 
     let mut doom_ref = Arc::new(Mutex::new(doom));
     Doomrakr::run(&mut doom_ref);
+    http::doom_http::run(&mut doom_ref);
+
+    //let routes = warp::get()
+    //    .map(|| {
+    //        "abcd123"
+    //    });
+    //warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
+    println!("adfsdf");
 
     loop {
         for stream in listener.incoming() {
