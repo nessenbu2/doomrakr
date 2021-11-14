@@ -165,17 +165,18 @@ impl Doomrakr {
                     thread::sleep(time::Duration::from_millis(1000));
                     continue;
                 }
+                drop(doom);
 
                 let action = match get_action() {
                     Ok(action) => action,
                     Err(message) => {
                         println!("{}", message);
-                        drop(doom);
                         thread::sleep(time::Duration::from_millis(5000));
                         continue;
                     }
                 };
 
+                let mut doom = doom_ref.lock().unwrap();
                 match action(&doom) {
                     Ok(_) => (),
                     Err(message) => println!("{}", message)
