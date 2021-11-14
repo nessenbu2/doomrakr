@@ -176,7 +176,7 @@ impl Doomrakr {
                     }
                 };
 
-                let mut doom = doom_ref.lock().unwrap();
+                let doom = doom_ref.lock().unwrap();
                 match action(&doom) {
                     Ok(_) => (),
                     Err(message) => println!("{}", message)

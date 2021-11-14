@@ -7,8 +7,6 @@ use std::fs::File;
 use std::mem;
 use std::convert::TryInto;
 
-use json::JsonValue;
-
 use doomrakr::headers;
 use doomrakr::headers::Header;
 use doomrakr::song::Song;
