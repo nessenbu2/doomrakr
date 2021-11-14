@@ -3,7 +3,7 @@ use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 use std::io::stdin;
 
-use json::{object, JsonValue};
+use json::{object, array, JsonValue};
 use doomrakr::song::Song;
 
 use crate::fs_walker::Directory;
@@ -117,7 +117,7 @@ fn status(doom: &Doomrakr) -> Result<usize, String> {
         Some(worker_ref) => {
             let mut worker = worker_ref.lock().unwrap();
             println!("Status for client: {}", worker.client_id);
-            worker.deref_mut().get_status()?
+            worker.deref_mut().get_status()
         }
     };
 
@@ -204,7 +204,7 @@ impl Doomrakr {
         let state = match self.workers.get(client_num) {
             Some(worker_ref) => {
                 let mut worker = worker_ref.lock().unwrap();
-                worker.deref_mut().get_status().unwrap()
+                worker.deref_mut().get_status()
             }
             None => {
                 println!("No current worker");
@@ -222,16 +222,18 @@ impl Doomrakr {
         println!("{}", json::stringify(data));
     }
 
+    // TODO: some awkwardness here converting to json -> string -> json again
     pub fn get_all_status(&self) -> String {
         let dir_json = serde_json::to_string(&self.dir).unwrap();
-        let mut client_json = object!{};
+        let mut client_json = array!{};
         for client_ref in self.workers.iter() {
-            let client = client_ref.lock().unwrap();
-            client_json[&client.client_id] = JsonValue::from(client.to_json());
+            let mut client = client_ref.lock().unwrap();
+            let json = JsonValue::from(serde_json::to_string(&client.get_status()).unwrap());
+            client_json.push(json).unwrap();
         }
         let mut final_json = object!{};
         final_json["library"] = JsonValue::from(dir_json);
-        final_json["clients"] = JsonValue::from(client_json);
+        final_json["clients"] = client_json;
         json::stringify(final_json)
     }
 

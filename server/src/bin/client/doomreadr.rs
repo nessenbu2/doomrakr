@@ -42,7 +42,18 @@ fn check_for_commands(doom: &mut Doomreadr) -> Result<(), String> {
 fn maybe_heartbeat(doom: &mut Doomreadr) -> Result<(), String> {
     if SystemTime::now().duration_since(doom.last_hb_time).unwrap().as_secs() >= 1 {
         let msg_header = Header::new(headers::CLIENT_HB, doom.client_id.clone());
+        let is_paused = doom.player.is_paused();
+        let queue = doom.player.get_queue();
+
         msg_header.send(&mut doom.con)?;
+
+        // Send paused status and then the number of songs in the queue
+        doom.con.send(&u64::to_be_bytes(is_paused as u64))?;
+        doom.con.send(&u64::to_be_bytes(queue.len().try_into().unwrap()))?;
+
+        for song in &queue {
+            song.send(&mut doom.con)?;
+        }
         doom.last_hb_time = SystemTime::now();
     }
     Ok(())
@@ -117,6 +128,7 @@ fn pause_play(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     Ok(())
 }
 
+// TODO: just use cached values
 fn get_status(doom: &mut Doomreadr, _header: &Header) -> Result<(), String> {
     let is_paused = doom.player.is_paused();
     let queue = doom.player.get_queue();

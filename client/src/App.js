@@ -33,6 +33,7 @@ class Data extends Component {
       return (
         <p>
           {this.state.library}
+          {this.state.clients}
         </p>
       )
     } else {
