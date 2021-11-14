@@ -9,6 +9,7 @@ use warp::Filter;
         std::thread::spawn(move || runtime.block_on({
             let routes = warp::get()
                 .map(move || {
+                    println!("http got request");
                     let doom = doom_ref.lock().unwrap();
                     doom.get_all_status()
                 });
