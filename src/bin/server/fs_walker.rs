@@ -2,10 +2,11 @@ use std::fs;
 use std::collections::HashMap;
 use std::vec::Vec;
 
-use json::{object, JsonValue};
+use serde::{Serialize, Deserialize};
 
 use doomrakr::song::Song;
 
+#[derive(Serialize, Deserialize)]
 pub struct Album {
     songs: Vec<Song>,
     name: String
@@ -30,6 +31,7 @@ impl Album {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Artist {
     albums: Vec<Album>,
     name: String
@@ -54,6 +56,7 @@ impl Artist {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Directory {
     artists: HashMap<String, Artist>
 }
@@ -71,21 +74,6 @@ impl Directory {
 
     pub fn get_artist(&self, artist: &String) -> Option<&Artist>{
         self.artists.get(artist)
-    }
-
-    pub fn dump_to_json_string(&self) -> String {
-        let mut data = object!{};
-
-        for (_name, artist) in &self.artists {
-            for album in &artist.albums {
-                let song_vec = album.songs.clone().iter()
-                    .map(|s| s.name.clone())
-                    .collect::<Vec<String>>();
-                data[artist.name.clone()][album.name.clone()] = JsonValue::from(song_vec);
-            }
-        }
-
-        json::stringify(data)
     }
 
     // Since I'm bad at rust, files are going to be stored at

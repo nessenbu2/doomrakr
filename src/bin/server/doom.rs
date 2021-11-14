@@ -165,17 +165,18 @@ impl Doomrakr {
                     thread::sleep(time::Duration::from_millis(1000));
                     continue;
                 }
+                drop(doom);
 
                 let action = match get_action() {
                     Ok(action) => action,
                     Err(message) => {
                         println!("{}", message);
-                        drop(doom);
                         thread::sleep(time::Duration::from_millis(5000));
                         continue;
                     }
                 };
 
+                let doom = doom_ref.lock().unwrap();
                 match action(&doom) {
                     Ok(_) => (),
                     Err(message) => println!("{}", message)
@@ -194,7 +195,7 @@ impl Doomrakr {
     }
 
     pub fn dump_dir(&self) {
-        let json = self.dir.dump_to_json_string();
+        let json = serde_json::to_string(&self.dir).unwrap();
         println!("{}", json);
     }
 
@@ -219,6 +220,19 @@ impl Doomrakr {
         data["current_queue"] = JsonValue::from(song_names);
 
         println!("{}", json::stringify(data));
+    }
+
+    pub fn get_all_status(&self) -> String {
+        let dir_json = serde_json::to_string(&self.dir).unwrap();
+        let mut client_json = object!{};
+        for client_ref in self.workers.iter() {
+            let client = client_ref.lock().unwrap();
+            client_json[&client.client_id] = JsonValue::from(client.to_json());
+        }
+        let mut final_json = object!{};
+        final_json["library"] = JsonValue::from(dir_json);
+        final_json["clients"] = JsonValue::from(client_json);
+        json::stringify(final_json)
     }
 
     pub fn init(&mut self) {

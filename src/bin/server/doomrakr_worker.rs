@@ -252,4 +252,8 @@ impl DoomrakrWorker {
         self.state == State::Closed
     }
 
+    pub fn to_json(&self) -> String {
+        json::stringify("todo")
+    }
+
 }
