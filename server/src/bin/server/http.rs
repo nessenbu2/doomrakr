@@ -7,12 +7,24 @@ use warp::Filter;
         let doom_ref = doom.clone();
         let runtime = tokio::runtime::Handle::try_current().unwrap();
         std::thread::spawn(move || runtime.block_on({
-            let routes = warp::get()
+
+            let doom = doom_ref.clone();
+            let base = warp::path("status")
                 .map(move || {
                     println!("http got request");
-                    let doom = doom_ref.lock().unwrap();
-                    doom.get_all_status()
+                    doom.lock().unwrap().get_all_status()
                 });
+
+            // path here is: GET /play/ARTIST/ALBUM/SONG
+            let update = warp::path!("play" / String / String / String)
+                .map(move |artist, album, song|{
+                    println!("artist: {}, album: {}, song: {}", artist, album, song);
+                    "artist"
+                });
+
+            // GET /status
+            // GET /play/:string/:string/:string
+            let routes = base.or(update);
             warp::serve(routes).run(([0, 0, 0, 0], 3030))
         }));
     }

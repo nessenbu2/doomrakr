@@ -13,7 +13,7 @@ class Doom extends Component {
   }
 
   componentDidMount() {
-    fetch("/hello")
+    fetch("/status")
       .then(res => res.json())
       .then(
         (result) => {
@@ -37,6 +37,7 @@ class Doom extends Component {
   }
 
   songSelected(song) {
+    fetch(`/play/${song.artist}/${song.album}/${song.name}`);
     this.setState({
       selectedClient: undefined
     });
