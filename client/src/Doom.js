@@ -37,14 +37,12 @@ class Doom extends Component {
   }
 
   songSelected(song) {
-    console.log("would select song");
     this.setState({
       selectedClient: undefined
     });
   }
 
   render() {
-    console.log("rendered");
     if (this.state.isLoaded) {
       if (this.state.selectedClient === undefined) {
         return (

@@ -32,10 +32,7 @@ class SongSelectView extends Component {
   }
 
   selectSong(song) {
-    console.log(this.state);
-    console.log(this.song);
     let songObj = _.find(this.state.selectedAlbum.songs, {name:song});
-    console.log(songObj);
     this.callback(songObj);
   }
 
@@ -50,7 +47,6 @@ class SongSelectView extends Component {
         buttons.push(<Selector key={album.name} name={album.name} callback={this.selectAlbum} />);
       }
     } else if (this.state.currentSelection === "song") {
-      console.log(this.state);
       for (const song of this.state.selectedAlbum.songs) {
         buttons.push(<Selector key={song.name} name={song.name} callback={this.selectSong} />);
       }
