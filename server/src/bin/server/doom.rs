@@ -233,7 +233,7 @@ impl Doomrakr {
         }
         let mut final_json = object!{};
         final_json["library"] = JsonValue::from(dir_json);
-        final_json["clients"] = client_json;
+        final_json["clients"] = JsonValue::from(client_json);
         json::stringify(final_json)
     }
 
