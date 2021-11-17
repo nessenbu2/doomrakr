@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import ClientView from './ClientView.js';
+import ClientSelectView from './ClientSelectView.js';
 import SongSelectView from './SongSelectView.js';
+import ClientStatusView from './ClientStatusView.js';
 
 class Doom extends Component {
   constructor() {
@@ -10,9 +11,10 @@ class Doom extends Component {
     }
     this.clientSelected = this.clientSelected.bind(this);
     this.songSelected = this.songSelected.bind(this);
+    this.fetchLatest = this.fetchLatest.bind(this);
   }
 
-  componentDidMount() {
+  fetchLatest() {
     fetch("/status")
       .then(res => res.json())
       .then(
@@ -30,6 +32,10 @@ class Doom extends Component {
       )
   }
 
+  componentDidMount() {
+    this.fetchLatest();
+  }
+
   clientSelected(clientId) {
     this.setState({
       selectedClient: clientId,
@@ -37,30 +43,41 @@ class Doom extends Component {
   }
 
   songSelected(song) {
-    fetch(`/play/${this.state.selectedClient}/${song.artist}/${song.album}/${song.name}`);
     this.setState({
       selectedClient: undefined
     });
+
+    fetch(`/play/${this.state.selectedClient}/${song.artist}/${song.album}/${song.name}`)
+      .then(
+        (result) => {
+          this.fetchLatest();
+        }
+      );
   }
 
   render() {
-    if (this.state.isLoaded) {
-      if (this.state.selectedClient === undefined) {
-        return (
-          <ClientView clients={this.state.clients} callback={this.clientSelected}/>
-        )
-      } else {
-        return (
-          <SongSelectView library={this.state.library} callback={this.songSelected}/>
-        )
-      } 
-    } else {
+    console.log("state:");
+    console.log(this.state);
+    let selectView = null;
+    if (!this.state.isLoaded) {
       return (
-        <p>
+        <div>
           Not yet loaded
-        </p>
-      )
+        </div>
+      );
+    } else {
+      if (this.state.selectedClient === undefined) {
+        selectView = <ClientSelectView clients={this.state.clients} callback={this.clientSelected}/>
+      } else {
+        selectView = <SongSelectView library={this.state.library} callback={this.songSelected}/>
+      } 
     }
+    return (
+      <div>
+        <ClientStatusView />
+        {selectView}
+      </div>
+    )
   }
 }
 

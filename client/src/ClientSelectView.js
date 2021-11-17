@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import Selector from './SelectorButton.js'
 
-class ClientView extends Component {
+class ClientStatusView extends Component {
   constructor(props) {
     super(props);
     this.callback = props.callback;
@@ -24,4 +24,4 @@ class ClientView extends Component {
   }
 }
 
-export default ClientView;
+export default ClientStatusView;
