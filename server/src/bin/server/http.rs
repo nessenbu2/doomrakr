@@ -16,9 +16,10 @@ use warp::Filter;
                 });
 
             // path here is: GET /play/ARTIST/ALBUM/SONG
-            let update = warp::path!("play" / String / String / String)
-                .map(move |artist, album, song|{
-                    println!("artist: {}, album: {}, song: {}", artist, album, song);
+            let doom = doom_ref.clone();
+            let update = warp::path!("play" / String / String / String / String)
+                .map(move |client_id, artist, album, song|{
+                    doom.lock().unwrap().add_song(client_id, artist, album, song);
                     "artist"
                 });
 

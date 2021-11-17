@@ -37,7 +37,7 @@ class Doom extends Component {
   }
 
   songSelected(song) {
-    fetch(`/play/${song.artist}/${song.album}/${song.name}`);
+    fetch(`/play/${this.state.selectedClient}/${song.artist}/${song.album}/${song.name}`);
     this.setState({
       selectedClient: undefined
     });
