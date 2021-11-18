@@ -31,6 +31,10 @@ class ClientStatusView extends Component {
                     callback={() => {
                         this.setState({selectedClient: undefined});
                         this.callback("pause", this.state.selectedClient);}} />);
+      buttons.push(<Selector key="resume" name="resume"
+                    callback={() => {
+                        this.setState({selectedClient: undefined});
+                        this.callback("resume", this.state.selectedClient);}} />);
     }
     return (
       <div>

@@ -37,8 +37,9 @@ class Doom extends Component {
   }
 
   clientSelected(method, clientId) {
-    if (method === "pause") {
-      fetch(`/pause/${clientId}`).then((resuld) => {
+    if (method === "pause" || method === "resume") {
+      console.log(`/${method}/${clientId}`);
+      fetch(`/${method}/${clientId}`).then((result) => {
         this.fetchLatest();
       });
     } else {

@@ -11,7 +11,7 @@ use warp::Filter;
             let doom = doom_ref.clone();
             let base = warp::path("status")
                 .map(move || {
-                    println!("http got request");
+                    //println!("http got request");
                     doom.lock().unwrap().get_all_status()
                 });
 
@@ -29,10 +29,21 @@ use warp::Filter;
                     doom.lock().unwrap().pause_song(client_id);
                     "paused"
                 });
+
+            let doom = doom_ref.clone();
+            let resume = warp::path!("resume" / String)
+                .map(move |client_id|{
+                    doom.lock().unwrap().resume_song(client_id);
+                    "paused"
+                });
             // GET /status
             // GET /play/:string/:string/:string
-            let routes = base.or(play)
-                .or(pause);
+            // GET /pause/:string
+            // GET /resume/:string
+            let routes = base
+                .or(play)
+                .or(pause)
+                .or(resume);
             warp::serve(routes).run(([0, 0, 0, 0], 3030))
         }));
     }

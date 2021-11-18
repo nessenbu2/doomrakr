@@ -78,6 +78,11 @@ impl Doomrakr {
         self.workers.get(&client_id).unwrap().lock().unwrap().deref_mut().pause().unwrap();
     }
 
+    pub fn resume_song(&mut self, client_id: String) {
+        println!("resuming {}", client_id);
+        self.workers.get(&client_id).unwrap().lock().unwrap().deref_mut().resume().unwrap();
+    }
+
     // should probably be called "track_new_con" and shouldn't take a worker.
     // just a Connection object
     pub fn handle_new_con(&mut self, client_id: String, worker: Arc<Mutex<DoomrakrWorker>>) {
