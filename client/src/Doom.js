@@ -38,7 +38,6 @@ class Doom extends Component {
 
   clientSelected(method, clientId) {
     if (method === "pause" || method === "resume") {
-      console.log(`/${method}/${clientId}`);
       fetch(`/${method}/${clientId}`).then((result) => {
         this.fetchLatest();
       });
@@ -63,8 +62,6 @@ class Doom extends Component {
   }
 
   render() {
-    console.log("state:");
-    console.log(this.state);
     let selectView = null;
     if (!this.state.isLoaded) {
       return (
@@ -81,7 +78,7 @@ class Doom extends Component {
     }
     return (
       <div>
-        <ClientStatusView />
+        <ClientStatusView key="abcd" clientInfo={this.state.clients}/>
         {selectView}
       </div>
     )

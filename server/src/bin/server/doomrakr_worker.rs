@@ -249,9 +249,13 @@ impl DoomrakrWorker {
         let song_path = Song::get_path(&song);
         let path = format!("{}/{}", base_path, song_path);
         self.file = Some(std::fs::File::open(path).unwrap());
-        self.song = Some(song);
+        self.song = Some(song.clone());
 
         self.state = State::Streaming;
+        if (self.current_queue.len() == 0) {
+            self.is_paused = false;
+        }
+        self.current_queue.push(song);
 
         Ok(sent)
     }
