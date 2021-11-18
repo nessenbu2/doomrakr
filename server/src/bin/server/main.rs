@@ -42,12 +42,13 @@ async fn main() -> () {
                     };
 
                     if header.action == headers::CLIENT_HELLO {
-                        let worker = DoomrakrWorker::init_connection(con, header);
-                        doom_ref.lock().unwrap().handle_new_con(worker);
+                        let (client_id, worker) = DoomrakrWorker::init_connection(con, header);
+                        doom_ref.lock().unwrap().handle_new_con(client_id, worker);
                     } else if header.action == headers::CLIENT_GET_LIBRARY {
                         doom_ref.lock().unwrap().dump_dir();
                     } else if header.action == headers::CLIENT_GET_QUEUE_INFO {
-                        doom_ref.lock().unwrap().dump_status(0);
+                        //doom_ref.lock().unwrap().dump_status(0);
+                        //TODO: fix debugging
                     } else if header.action == headers::DEBUG_HELLO {
                         println!("Got a debug msg: {}", header.id);
                     } else {
