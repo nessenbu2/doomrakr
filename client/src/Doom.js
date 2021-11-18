@@ -36,10 +36,17 @@ class Doom extends Component {
     this.fetchLatest();
   }
 
-  clientSelected(clientId) {
-    this.setState({
-      selectedClient: clientId,
-    });
+  clientSelected(method, clientId) {
+    if (method === "pause") {
+      fetch(`/pause/${clientId}`).then((resuld) => {
+        this.fetchLatest();
+      });
+    } else {
+      this.setState({
+        selectedClient: clientId,
+        selectedMethod: method
+      });
+    }
   }
 
   songSelected(song) {
@@ -47,12 +54,11 @@ class Doom extends Component {
       selectedClient: undefined
     });
 
-    fetch(`/play/${this.state.selectedClient}/${song.artist}/${song.album}/${song.name}`)
-      .then(
-        (result) => {
-          this.fetchLatest();
-        }
-      );
+    fetch(`/play/${this.state.selectedClient}/${song.artist}/${song.album}/${song.name}`).then(
+      (result) => {
+        this.fetchLatest();
+      }
+    );
   }
 
   render() {

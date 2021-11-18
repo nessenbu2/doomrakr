@@ -70,7 +70,12 @@ impl Doomrakr {
     pub fn add_song(&mut self, client_id: String, artist: String, album: String, song: String) {
         let song = Song::new(artist, album, song);
         println!("client_id: {}, artist: {}, album: {}, song: {}", client_id, song.artist, song.album, song.name);
-        self.workers.get(&client_id).unwrap().lock().unwrap().deref_mut().send_song(song);
+        self.workers.get(&client_id).unwrap().lock().unwrap().deref_mut().send_song(song).unwrap();
+    }
+
+    pub fn pause_song(&mut self, client_id: String) {
+        println!("pausing {}", client_id);
+        self.workers.get(&client_id).unwrap().lock().unwrap().deref_mut().pause().unwrap();
     }
 
     // should probably be called "track_new_con" and shouldn't take a worker.

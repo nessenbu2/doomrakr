@@ -17,15 +17,22 @@ use warp::Filter;
 
             // path here is: GET /play/ARTIST/ALBUM/SONG
             let doom = doom_ref.clone();
-            let update = warp::path!("play" / String / String / String / String)
+            let play = warp::path!("play" / String / String / String / String)
                 .map(move |client_id, artist, album, song|{
                     doom.lock().unwrap().add_song(client_id, artist, album, song);
                     "artist"
                 });
 
+            let doom = doom_ref.clone();
+            let pause = warp::path!("pause" / String)
+                .map(move |client_id|{
+                    doom.lock().unwrap().pause_song(client_id);
+                    "paused"
+                });
             // GET /status
             // GET /play/:string/:string/:string
-            let routes = base.or(update);
+            let routes = base.or(play)
+                .or(pause);
             warp::serve(routes).run(([0, 0, 0, 0], 3030))
         }));
     }

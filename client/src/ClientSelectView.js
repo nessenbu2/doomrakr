@@ -8,17 +8,33 @@ class ClientStatusView extends Component {
     this.state = {
       clients: props.clients
     }
+    this.selectClient = this.selectedClient.bind(this);
+  }
+
+  selectedClient(client) {
+    this.setState({
+      selectedClient: client
+    })
   }
 
   render() {
-    let clientButtons = [];
-    for (const client of this.state.clients) {
-      let id = JSON.parse(client).id;
-      clientButtons.push(<Selector key={id} name={id} callback={this.callback}/>);
+    let buttons= [];
+    if (this.state.selectedClient === undefined) {
+      for (const client of this.state.clients) {
+        let id = JSON.parse(client).id;
+        buttons.push(<Selector key={id} name={id} callback={this.selectClient}/>);
+      }
+    } else {
+      buttons.push(<Selector key="play" name="play"
+                    callback={() => {this.callback("add", this.state.selectedClient);}} />);
+      buttons.push(<Selector key="pause" name="pause"
+                    callback={() => {
+                        this.setState({selectedClient: undefined});
+                        this.callback("pause", this.state.selectedClient);}} />);
     }
     return (
       <div>
-        {clientButtons}
+        {buttons}
       </div>
     )
   }
