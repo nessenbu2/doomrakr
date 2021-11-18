@@ -2,11 +2,13 @@ import React, { Component } from 'react';
 
 class ClientStatusView extends Component {
   render() {
-    let formatedState = function(clientName, queue) {
+    let formatedState = function(client) {
+      console.log(client.is_paused);
       return (
-        <div key={clientName}>
-          <h3>{clientName}</h3>
-          <p>{queue.map(song => song.name + " ")}</p>
+        <div key={client.id}>
+          <h3>{client.id}</h3>
+          <p>is paused: {client.is_paused.toString()}</p>
+          <p>{client.current_queue.map(song => song.name + " ")}</p>
         </div>
       )
     }
@@ -14,7 +16,7 @@ class ClientStatusView extends Component {
     let views = [];
     for (const client of this.props.clientInfo) {
       let clientJson = JSON.parse(client);
-      views.push(formatedState(clientJson.id, clientJson.current_queue));
+      views.push(formatedState(clientJson));
     }
     return (
       <div>
