@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import _ from 'lodash';
 import Selector from './SelectorButton.js'
 
+import './SelectView.css';
+
 class SongSelectView extends Component {
   constructor(props) {
     super(props);
@@ -52,7 +54,7 @@ class SongSelectView extends Component {
       }
     }
     return (
-      <div>
+      <div className="selectView">
         <p>select ur {this.state.currentSelection}.</p>
         {buttons}
       </div>

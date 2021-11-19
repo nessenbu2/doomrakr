@@ -3,6 +3,8 @@ import ClientSelectView from './ClientSelectView.js';
 import SongSelectView from './SongSelectView.js';
 import ClientStatusView from './ClientStatusView.js';
 
+import './Doom.css';
+
 class Doom extends Component {
   constructor() {
     super();
@@ -77,8 +79,8 @@ class Doom extends Component {
       } 
     }
     return (
-      <div>
-        <ClientStatusView key="abcd" clientInfo={this.state.clients}/>
+      <div className="doom">
+        <ClientStatusView className="status" key="status" clientInfo={this.state.clients}/>
         {selectView}
       </div>
     )

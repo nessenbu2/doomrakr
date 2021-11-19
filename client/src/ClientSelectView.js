@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import Selector from './SelectorButton.js'
 
+import './SelectView.css';
+
 class ClientStatusView extends Component {
   constructor(props) {
     super(props);
@@ -19,12 +21,15 @@ class ClientStatusView extends Component {
 
   render() {
     let buttons= [];
+    let choice = "";
     if (this.state.selectedClient === undefined) {
+      choice = "client";
       for (const client of this.state.clients) {
         let id = JSON.parse(client).id;
         buttons.push(<Selector key={id} name={id} callback={this.selectClient}/>);
       }
     } else {
+      choice = "action";
       buttons.push(<Selector key="play" name="play"
                     callback={() => {this.callback("add", this.state.selectedClient);}} />);
       buttons.push(<Selector key="pause" name="pause"
@@ -37,7 +42,8 @@ class ClientStatusView extends Component {
                         this.callback("resume", this.state.selectedClient);}} />);
     }
     return (
-      <div>
+      <div className="selectView">
+        <p>Select a dang {choice}</p>
         {buttons}
       </div>
     )

@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import './ClientStatusView.css';
 
 class ClientStatusView extends Component {
   render() {
@@ -19,7 +20,7 @@ class ClientStatusView extends Component {
       views.push(formatedState(clientJson));
     }
     return (
-      <div>
+      <div className="statusView">
         {views}
       </div>
     )
